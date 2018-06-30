@@ -1,0 +1,485 @@
+---
+title: "Teoria analizy du¿ych zbiorów - Lista II"
+author: "Makowski Micha³"
+date: "9 marca 2017"
+output:
+  pdf_document:
+    fig_caption: yes
+    highlight: tango
+    toc: yes
+    toc_depth: 1
+header-includes:
+- \usepackage{booktabs}
+lang: pl-PL
+geometry: margin=1.5cm
+subtitle: Problem ig³y w stogu siana
+fontsize: 10pt
+---
+
+```{r knitrOptions, include=FALSE}
+
+knitr::opts_chunk$set(fit.align="center", echo=FALSE, warning=FALSE, error=FALSE, message=FALSE)
+
+inline_hook=function(x) { if (is.numeric(x)) { format(x, digits=2) } else x}
+
+knitr::knit_hooks$set(inline=inline_hook)
+# knitr::opts_chunk$set(comment="", message=FALSE, tidy.opts=list(keep.blank.line=TRUE, width.cutoff=120),
+#                       options(width=100), cache=TRUE, fig.align='center', fig.height=5.5,
+#                       fig.width=10, fig.path='figure/plot-', fig.show='hold', size='footnotesize', cache=TRUE)
+
+```
+
+```{r libraries, include=FALSE}
+
+rm(list=ls())
+
+options(width=100)
+
+# install.packages("ggplot2")r
+library(ggplot2, quietly=TRUE) 
+# install.packages("latex2exp")
+library(latex2exp, quietly=TRUE) 
+library(knitr, quietly=TRUE)
+library(xtable, quietly=TRUE)
+
+
+repNum = 750
+
+```
+
+\newpage 
+
+# Wstêp
+
+W nimniejszym raporcie umieszczone zosta³y rozwi¹zania drugiej listy zadañ z przedmiotu __Teoria analizy du¿ych zbiorów__ 
+prowadzonego przez Pani¹ Profesor Ma³gorzatê Bogdan we wspó³pracy z Panem Micha³em Kosem. 
+Jest to kontynuacja zagadnieñ poruszanych na pierwszej liœcie, g³ównym tematem bêdzie problem __ig³y w stogu siana__ tzn.
+zagadnienia wielokrotnego testowania, w której jedna z obserwowanych wartoœci daje mocne podstawy do odrucenia hipotezy zerowej, 
+podczas gdy pozosta³e takich podstaw nie daj¹. Porównamy wyniki jakie daje __Fisher's Combination Test__ oraz __korekta Bonferroniego__.
+
+Dla testu Fishera statystyka testowa dana jest wzorem
+$$T=-\sum_i^n2\log{p_i}$$
+gdzie $p_i$ to P-wartoœæ pojedyñczego testu. Warto zaznaczyæ, ¿e przy za³o¿eniu niezale¿noœci hipotez rozk³ad statystyki to 
+$T\sim\chi^2_{2n}$, zatem test Fishera odrzuca globaln¹ hipotezê zerow¹ gdy $T>\chi^2_{2n}(1-\alpha)$. Agreguje on wiele p-wartoœci 
+i na ich podstawie wylicza globaln¹ statystyke testow¹. Jest to przeciwne do zasady dzia³ania __korekty Bonferroniego__ 
+analizowanej na poprzedniej liœcie, gdzie patrzyliœmy tylko na najmniejsza p-wartoœæ. 
+
+Na wyk³adnie zosta³o pokazane, ¿e przy testowaniu globalnej hipotezy o zerowaniu siê œredniej, niezale¿nie od wybranego testu, 
+najmniejsze odchylenie jakie jesteœmy w stanie znaleŸæ to $\sqrt{2\log{n}}$. 
+W przypadku gdy odchylenie jest mniejsze, w najgorszym przypadku, ¿aden test nie bêdzie zachowaywa³ siê lepiej ni¿ _rzut monet¹_.
+
+_Dla wszystkich poni¿szych estymacji u¿yto 750 replikacji_
+
+\newpage
+
+# Zadanie I
+
+Niech 
+$$L(X)=\frac{1}{p}\sum_{i=1}^n\exp{(X_i\mu-\mu^2/2)}$$ 
+bêdzie statyk¹ Neymana-Pearsona dla problemu ig³y w stogu siana i niech
+$$\tilde{L}(X)=\frac{1}{p}\sum_{i=1}^n\left(\exp{(X_i\mu-\mu^2/2)}\mathbb{1}_{\{X_1<\sqrt{2\log{p}}\}}\right)$$ 
+bêdzie jego obciêta wersj¹. Dla ka¿dej mo¿liwej kombinacji $\mu=(1+\epsilon)\sqrt{2\log{n}}$, gdzie 
+$\epsilon\in\{-0.3, -0.2, -0.1\}$ oraz $p\in\{5\cdot10^3,5\cdot10^4,5\cdot10^5\}$ 
+bêdziemy estymowaæ rózne charakterystyki.
+Bêdzie to numeryczny dowód, ¿e jeœli $\mu=(1+\epsilon)\sqrt{2\log{p}}$ to $L\xrightarrow{p}1$, 
+przy za³o¿eniu, ¿e $\epsilon<0$. 
+
+```{r 1full}
+
+estProb     = matrix(nrow=3, ncol=3)
+estMean     = matrix(nrow=3, ncol=3)
+estQuantile = matrix(nrow=3, ncol=3)
+estMaximum  = matrix(nrow=3, ncol=3)
+estVar      = matrix(nrow=3, ncol=3)
+
+estMeanTilde     = matrix(nrow=3, ncol=3)
+estQuantileTilde = matrix(nrow=3, ncol=3)
+estMaximumTilde  = matrix(nrow=3, ncol=3)
+estVarTilde      = matrix(nrow=3, ncol=3)
+
+
+nValue  = c(5000, 50000, 500000)
+epsilon = c(-0.3,-0.2,-0.1)
+
+everything = function(i,j,rep)
+{
+    prob    = 0
+    p       = nValue[i]
+    eps     = epsilon[j]
+    results = matrix(nrow=2, ncol=rep)
+    
+    for(k in 1:rep)
+    {
+        x      = rnorm(p)
+        c      = sqrt(2*log(p))
+        mi     = (1+eps)*c
+        
+        y      = exp(x*mi - (mi^2)/2)
+        l      = mean(y)
+        
+        lTilde = mean(y*(x<c))
+        
+        results[,k] = c(l,lTilde)
+        
+        if(!(l==lTilde))
+        {
+            prob = prob + 1
+        }
+    }
+    
+    maxim = apply(results,1,max)
+    meann = apply(results,1,mean)
+    quant = apply(results,1,quantile, probs=c(.95))
+    varr  = apply(results,1,var)
+  
+    estProb[i,j]          <<- prob/rep
+    estMaximumTilde[i,j]  <<- maxim[2] 
+    estQuantileTilde[i,j] <<- quant[2]
+    estMeanTilde[i,j]     <<- meann[2]
+    estVarTilde[i,j]      <<- varr[2]
+    estMaximum[i,j]       <<- maxim[1] 
+    estQuantile[i,j]      <<- quant[1]
+    estMean[i,j]          <<- meann[1]
+    estVar[i,j]           <<- varr[1]
+  
+}
+
+for(i in 1:3)
+{
+    for(j in 1:3)
+    {
+        everything(i,j, repNum)
+    }
+}
+
+```
+
+## a)
+
+Estymacja $\mathbb{P}_{H_0}(L(X)\ne\tilde{L}(X))$.
+Zgodnie z teori¹ $\mathbb{P}_{H_0}(L(X)\ne\tilde{L}(X))\le\mathbb{P}_{H_0}(\max{y_i}\ge\mu)\rightarrow0$ 
+ze wzglêdu na $p$, gdzie $\mu$ jak wy¿ej.
+SprawdŸmy wyniki:
+
+```{r 1a, results='asis'}
+
+rownames(estProb) = nValue
+
+tab = kable(estProb, format='latex', booktabs=TRUE, col.names=epsilon, row.names=TRUE, digits = 5)
+
+cat(c("\\begin{table}[!htb]
+    \\begin{minipage}{.5\\linewidth}
+      \\caption{Estymowane prawdopodobieñstwo}
+      \\centering",
+        tab,
+    "\\end{minipage}
+\\end{table}"
+))
+
+```
+
+Zgodnie z teori¹ zbie¿noœæ zachodzi, wraz ze wzrostem $p$ prawdopodobieñstwo zdarzenia maleje.
+
+## b)
+
+Estymacja œredniej i wariancji $L(X)$ oraz $\tilde{L}(X))$.
+Œrednia obciêtej wersji winna zbiegaæ do $\Phi(-\epsilon\sqrt{2\log{p}})$, wariancja do $o(1)$, a dok³adniej do zera 
+(wartoœci $\epsilon<0$). S¹ to fakty, które zosta³y udowodnione na wyk³adzie.
+Otrzymane wyniki:
+
+```{r 1b, results='asis'}
+
+probNorm = matrix(nrow=3, ncol=3)
+
+for(i in 1:3)
+{
+    for(j in 1:3)
+    {
+        probNorm[i,j] = pnorm(-epsilon[j]*sqrt(2*log(nValue[i])))
+    }
+}
+
+rownames(probNorm) = nValue
+tab = kable(probNorm, format='latex', booktabs=TRUE, col.names=epsilon, row.names=TRUE, digits = 5)
+
+rownames(estMean)      = nValue
+rownames(estMeanTilde) = nValue
+rownames(estVar)       = nValue
+rownames(estVarTilde)  = nValue
+
+tab1 = kable(estMean, format='latex', booktabs=TRUE, col.names=epsilon, row.names=TRUE, digits = 5)
+tab2 = kable(estMeanTilde, format='latex', booktabs=TRUE, col.names=epsilon, row.names=TRUE, digits = 5)
+tab3 = kable(estVar, format='latex', booktabs=TRUE, 
+             col.names=epsilon, row.names=TRUE, digits = 5)
+tab4 = kable(estVarTilde, format='latex', booktabs=TRUE, col.names=epsilon, row.names=TRUE, digits = 5)
+
+
+cat(c("\\begin{table}[!htb]
+    \\begin{minipage}{.5\\linewidth}
+      \\caption{Wartoœæ dystrybuanty}
+      \\centering",
+        tab,
+    "\\end{minipage}
+\\end{table}"
+))
+
+cat(c("\\begin{table}[!htb]
+    \\begin{minipage}{.5\\linewidth}
+      \\caption{Estymowana œrednia L}
+      \\centering",
+        tab1,
+    "\\end{minipage}%
+    \\begin{minipage}{.5\\linewidth}
+      \\caption{Estymowana œrednia Ltylda}
+      \\centering",
+        tab2,
+    "\\end{minipage} 
+\\end{table}"
+))  
+
+cat(c("\\begin{table}[!htb]
+    \\begin{minipage}{.5\\linewidth}
+      \\caption{Estymowana wariancja L}
+      \\centering",
+        tab3,
+    "\\end{minipage}%
+    \\begin{minipage}{.5\\linewidth}
+      \\caption{Estymowana wariancja Ltylda}
+      \\centering",
+        tab4,
+    "\\end{minipage} 
+\\end{table}"
+))  
+
+```
+
+Zgodnie z teori¹, wartoœci œredniej $\tilde{L}$ oscyluj¹ w okolicach wartoœci $\Phi(\epsilon\sqrt{2\log{p}})$, 
+szczególnie dla ma³ego $\epsilon$, a wariancja zbiega do zera.
+Dzieje siê tak z powodu "odcinania" ciê¿kiego ogona rozk³adu statystyki $L$. 
+W kolejny podpunkcie sprawdzimy czy rzeczywiœcie statystyka $L$ ma ciê¿koogonowy rozk³ad.
+
+
+\newpage
+
+## c)
+
+Estymacja maximum $L(X)$ oraz $\tilde{L}(X))$.
+Otrzymane wyniki:
+
+```{r 1c, results='asis'}
+
+rownames(estMaximum)=nValue
+rownames(estMaximumTilde)=nValue
+
+tab1 = kable(estMaximum, format='latex', booktabs=TRUE, col.names=epsilon, row.names=TRUE, digits = 5)
+tab2 = kable(estMaximumTilde, format='latex', booktabs=TRUE, col.names=epsilon, row.names=TRUE, digits = 5)
+
+cat(c("\\begin{table}[!htb]
+    \\begin{minipage}{.5\\linewidth}
+      \\caption{Estymowane maximum L}
+      \\centering",
+        tab1,
+    "\\end{minipage}%
+    \\begin{minipage}{.5\\linewidth}
+      \\caption{Estymowane maximum Ltylda}
+      \\centering",
+        tab2,
+    "\\end{minipage} 
+\\end{table}"
+))  
+
+```
+
+Jak widaæ, ró¿nice pomiêdzy maksimum dla ka¿dej ze statystyk s¹ znacz¹ce, 
+potwierdza to tezê od wystêpowaniu du¿y, odstaj¹cych obserwacji statystyki.
+Wystêpuj¹ one jednak na tyle rzadko, ¿e nie maj¹ tak du¿ego wp³ywu na prawdopodobieñtwo badane w punkcie _a)_
+Chcielibyœmy pokazac jak "bardzo" ró¿ni¹ siê te statystyki, co zrobimy w kolejnym podpunkcie. 
+
+## d)
+
+Estymacja kwantyli rzêdu 0.95 dla $L(X)$ oraz $\tilde{L}(X))$.
+Otrzymane wyniki:
+
+```{r 1d, results='asis'}
+
+rownames(estQuantile)=nValue
+rownames(estQuantileTilde)=nValue
+
+tab1 = kable(estQuantile, format='latex', booktabs=TRUE, col.names=epsilon, row.names=TRUE, digits = 5)
+tab2 = kable(estQuantileTilde, format='latex', booktabs=TRUE, col.names=epsilon, row.names=TRUE, digits = 5)
+
+cat(c("\\begin{table}[!htb]
+    \\begin{minipage}{.5\\linewidth}
+      \\caption{Estymowane kwantyli}
+      \\centering",
+        tab1,
+    "\\end{minipage}%
+    \\begin{minipage}{.5\\linewidth}
+      \\caption{Estymowane kwantyli Ltylda}
+      \\centering",
+        tab2,
+    "\\end{minipage} 
+\\end{table}"
+))  
+
+```
+
+Widoczna jest ma³a ró¿nica pomiedzy kwantylem rzêdu 0.95 dla $p=500000$ oraz $\epsilon=-0.3$. 
+W pozosta³ych przypadkach ró¿nica jest stosunkowo du¿a, co niestety nie pasuje do naszego toku rozumowania.
+Byæ mo¿e zwiêkszenie liczby replikacji mog³oby pomóc, jednak¿e problemem jest tutaj moc obliczeniowa komputera 
+na którym wykonywano symulacje.
+
+\newpage
+
+# Zadanie 2
+
+W zadaniu kolejnym celem jest wyznaczenie wartoœci krytycznej testu __N-P__ dla problemu __ig³y w stogu siana__.
+U¿yty zosta³ poziom istotnoœci $\alpha=0.05$, a poszukiwany obszar krytyczny jest jednostronny. 
+
+W pierwszy przypadku ig³a jest równa $\mu^{(p)}=1.2\sqrt{2\log{p}}$, 
+a w drugim przypadku $\mu^{(p)}=1.2\sqrt{2\log{p}}$. Rozmiar próby $p\in\{5000,50000\}$.
+
+```{r 2all}
+
+L = function(X, eps)
+{
+    p = length(X)
+    m = (1+eps)*sqrt(2*log(p))
+    mean(exp(X*m - m^2/2))
+}
+
+
+smallP = matrix(rnorm(repNum*5000), repNum)
+largeP = matrix(rnorm(repNum*50000), repNum)
+
+l1.2sm = sapply(1:repNum, function(i) L(smallP[i,], .2))
+l1.2lg = sapply(1:repNum, function(i) L(largeP[i,], .2))
+l0.8sm = sapply(1:repNum, function(i) L(smallP[i,], -.2))
+l0.8lg = sapply(1:repNum, function(i) L(largeP[i,], -.2))
+
+results2 = data.frame("1.2" = c(quantile(l1.2sm, probs=.95), quantile(l1.2lg, probs=.95)),
+                  "0.8" = c(quantile(l0.8sm, probs=.95), quantile(l0.8lg, probs=.95)),
+                  row.names = c("p=5000", "p=50000"))
+
+
+```
+
+```{r 2results, results='asis'}
+
+tab1 = kable(results2, format='latex', booktabs=TRUE, col.names=c("1.2", "0.8"),
+             row.names=TRUE, digits = 5)
+
+cat(c("\\begin{table}[!htb]
+    \\begin{minipage}{.5\\linewidth}
+      \\caption{Estymowane wartoœci krytycznych}
+      \\centering",
+        tab1,
+    "\\end{minipage}
+\\end{table}"
+))
+
+```
+
+Powy¿sze wartoœci zostan¹ u¿yte w kolejnym zadaniu, gdzie zasymulujemy moc testu __N-P__ i 
+porównamy j¹ do mocy __korekty Bonferroniego__.
+
+# Zadanie 3
+
+Zgodnie z teori¹ przedstawion¹ na wyk³adzie nie istnieje test, który by³by w stanie "wychwyciæ ig³e" 
+na poziomie mniejszym ni¿ $\mu^{(p)}=\sqrt{2\log{p}}$. 
+
+Na wyk³adzie zosta³o pokazane, ¿e moc __korekty Bonferonniego__ dla ig³y wiêkszej ni¿ odciêcie zbiega do jednoœci,
+z kolei dla ig³y mniejszej zbiega do $\alpha$.
+Moc testu __N-P__ zachowuje siê analogicznie.
+
+```{r 3all}
+
+p=5000
+pp=50000
+k=1000
+alpha=0.05
+mi_1=1.2*sqrt(2*log(p))
+mi_2=0.8*sqrt(2*log(p))
+
+mi_1p=1.2*sqrt(2*log(pp))
+mi_2p=0.8*sqrt(2*log(pp))
+
+pval = function(x){
+  return (2*pnorm(-abs(x)))
+}
+
+bonftest = function(x){
+  return (min(x) <= alpha/p)
+}
+
+bonftestp = function(x){
+  return (min(x) <= alpha/pp)
+}
+
+Xa = matrix(rnorm(p*repNum), p, repNum)
+Xa[1,] = Xa[1,] + mi_1
+Xa = pval(Xa)
+
+bonfpowa = mean(apply(Xa, 2, bonftest))
+
+Xb = matrix(rnorm(p*repNum), p, repNum)
+Xb[1,] = Xb[1,] + mi_2
+Xb = pval(Xb)
+
+bonfpowb = mean(apply(Xb, 2, bonftest))
+
+
+Xap = matrix(rnorm(pp*repNum), pp, repNum)
+Xap[1,] = Xap[1,] + mi_1p
+Xap = pval(Xap)
+
+bonfpowap = mean(apply(Xap, 2, bonftestp))
+
+Xbp = matrix(rnorm(pp*repNum), pp, repNum)
+Xbp[1,] = Xbp[1,] + mi_2p
+Xbp = pval(Xbp)
+
+bonfpowbp = mean(apply(Xbp, 2, bonftestp))
+
+mocNM = function(N, p, eps, Tn)
+{
+    m = (1+eps)*sqrt(2*log(p))
+    foo = cbind(rep(m, N), matrix(0, nrow = N, ncol = p-1))
+    Z = matrix(rnorm(N*p), N)
+    X = Z + foo
+  mean(sapply(1:N, function(i) L(X[i,], eps) > Tn))
+}
+
+results3 = t(data.frame(c(mocNM(repNum, 5000, 0.2, l1.2sm), 
+                          mocNM(repNum, 5000, -0.2, l0.8sm),
+                          bonfpowa, 
+                          bonfpowb),
+                        c(mocNM(repNum, 50000, 0.2, l1.2lg), 
+                          mocNM(repNum, 50000, -0.2, l0.8lg),
+                         bonfpowap, 
+                         bonfpowbp)))
+
+
+rownames(results3) = c("p=5000", "p=50000")
+colnames(results3) = c("NP 1.2", "NP 0.8", "Bonf 1.2", "Bonf 0.8")
+
+```
+
+```{r 3results, results='asis'}
+
+tab1 = kable(results3, format='latex', booktabs=TRUE, row.names=TRUE, digits = 5)
+
+cat(c("\\begin{table}[!htb]
+    \\begin{minipage}{.5\\linewidth}
+      \\caption{Estymowane moce testów}
+      \\centering",
+        tab1,
+    "\\end{minipage}
+\\end{table}"
+))
+
+```
+
+Widoczna jest znacz¹ca ró¿nica pomiedzy mocami testów, na korzyœæ testu __N-P__. Jest to zgodne z teori¹, 
+gdy¿ w przypadku testowania prostej hipotezy przeciwko prostej alternatywie test __N-P__ jest testem 
+jednostajnie najmocniejszym.

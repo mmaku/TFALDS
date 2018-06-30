@@ -1,0 +1,517 @@
+---
+title: "Teoria analizy du¿ych zbiorów - Lista III"
+author: "Makowski Micha³"
+date: "11 maja 2017"
+output:
+  pdf_document:
+    fig_caption: yes
+    highlight: tango
+    number_sections: yes
+    toc: yes
+header-includes:
+- \usepackage{booktabs}
+- \usepackage{subfig}
+- \usepackage{graphicx}
+lang: pl-PL
+geometry: margin=1cm
+subtitle: Test Higher Criticism i detekcja rzadkich sygna³ów
+fontsize: 10pt
+---
+
+```{r knitrOptions, include=FALSE}
+
+inline_hook=function(x) { if (is.numeric(x)) { format(x, digits=5) } else x}
+
+knitr::knit_hooks$set(inline=inline_hook)
+knitr::opts_chunk$set(comment="", message=FALSE, echo=FALSE, warning=FALSE, error=FALSE, 
+                      tidy.opts=list(keep.blank.line=TRUE, width.cutoff=120),
+                      options(width=100), cache=TRUE, fig.align='center', fig.height=6,
+                      fig.width=10, fig.path='figure/plot-', fig.show='hold', size='footnotesize')
+
+```
+
+```{r libraries, include=FALSE}
+
+rm(list=ls())
+
+options(width=100)
+
+# install.packages("ggplot2")r
+library(ggplot2, quietly=TRUE) 
+# install.packages("latex2exp")
+library(latex2exp, quietly=TRUE) 
+library(knitr, quietly=TRUE)
+library(xtable, quietly=TRUE)
+library(stats, quietly=TRUE)
+# install.packages("goftest")
+library(goftest, quietly=TRUE)
+library(e1071, quietly=TRUE)
+
+
+
+repNum1 = 100000
+repNum2 = repNum3 = 500
+
+```
+
+\newpage 
+
+# Wstêp
+
+W nimniejszym raporcie umieszczone zosta³y rozwi¹zania trzeciej listy zadañ z przedmiotu 
+__Teoria analizy du¿ych zbiorów__ prowadzonego przez Pani¹ Profesor Ma³gorzatê Bogdan we 
+wspó³pracy z Panem Micha³em Kosem. Jest to kontynuacja zagadnieñ poruszanych na poprzednich listach,
+tym razem g³ównym tematem bêdzie statystyka __Higher Criticism__ oraz tzw. rzadkie mieszaniny.
+
+Poni¿ej wprowadzimy podstawowe pojêcia u¿ywane w póŸniejszych rozwa¿aniach.
+
+## Testy bazuj¹ce na dystrybuancie empirycznej
+
+Dystrybuanta empiryczna $p_1,...,p_n$ dana jest wzorem
+$$\hat{F_n}(t)=\frac{1}{n}\#\{i:p_i\le n\}$$
+
+### Test Kolmogorova-Smirnova (K-S)
+
+Statystyka testu K-S zadana jest wzorem
+$$KS=\sup_t|\hat{F_n}(t)-t|$$
+
+### Test Andersona-Darlinga (A-D)
+
+Statystyka testu A-D dana jest poprzez
+$$A^2=n\int_0^1\frac{\big(\hat{F_n}(t)-t\big)^2}{t(1-t)}dt$$
+Jest to specjalna wersja statystyki Cramera-von Misesa z funkcj¹ wagi $\omega(t)=\big[t(1-t)\big]^{-1}$.
+U¿yteczna jest nastêpuj¹ca zale¿noœæ
+$$A^2=-n-\sum_{i=1}^n\frac{2i-1}{n}\Big[\log(p_{(i)}+\log(1-p_{(n+1-i)})\Big]$$
+
+### Test Tukey'a - Tukey's Second-Level Significance Testing (H-C)
+
+Statystyka testowa dana jest poprzez
+$$HC_n(t)=\frac{\hat{F_n}(t)-t}{\sqrt{t(1-t)/n}}$$
+Obliczamy jej zgeneralizowan¹ wersjê (wprowadzon¹ przez Donoho i Jin[2004]) zadan¹ wzorem
+$$HC_n^*=\max_{0\le t\le\alpha_0}\frac{\hat{F_n}(t)-t}{\sqrt{t(1-t)/n}}$$
+W po¿niejszych rozwa¿aniach przyjmiemy $\alpha_0=0.5$.
+
+Oczywiœcie wszystkie powy¿sze testy odrzucaj¹ hipotezy zerowe dla du¿ych wartoœci statystyk.
+
+\newpage
+## Rzadkie mieszaniny
+
+Wprowadzimy teraz zadanie badane na kolejnych stronach.
+Rozwa¿my problem testowania:
+$$H_{0,i}:X_i\sim\mathcal{N}(0,1)$$
+$$H_{1,i}:X_i\sim\mathcal{N}(\mu_i,1) \qquad\mu_i>0$$
+W powy¿szym zagadnieniu dopuszczamy pewn¹ liczbê zagadnieñ, nieznan¹, które pochodz¹ z hipotezy $H_1$. 
+Zamiast tego zak³adamy, ¿e próby pochodz¹ z mieszaniny rozk³adów $\mathcal{N}(0,1)$ oraz $\mathcal{N}(\mu,1)$. 
+Na podstawie powy¿szego budujemy nowe doœwiadczenie:
+$$H_{0}:X_i\sim\mathcal{N}(0,1)$$
+$$H_{1}:X_i\sim(1-\epsilon)\mathcal{N}(0,1)+\epsilon\mathcal{N}(\mu,1) \qquad\mu>0$$
+W takim doœwiadczeniu test ilorazu najwiêkszej wiarygodnoœci jest postaci:
+$$L=\prod_{i=1}^n\Big[(1-\epsilon)+\epsilon\exp(\mu X_i+\mu^2/2)\Big]$$
+Ustalmy zaleznoœæ $\epsilon$ oraz $\mu$ od $n$
+$$\epsilon_n=n^{-\beta}\qquad\qquad\frac{1}{2}\le\beta\le1$$
+$$\mu_n=\sqrt{2r\log{n}}\qquad\qquad 0<r<1$$
+Widaæ, ¿e zagadnienia badane na poprzednich listach to sytuacje graniczne, tzn. gdy $\beta=1/2$ lub $\beta=1$ i $r=1$, 
+odpowiadaj¹ce odpowiednio problemowi ma³ych efektów i problemowi ig³y w stogu siana.
+
+
+_Jeœli nie jest napisane inaczej wszystkie symulacje zosta³y przeprowadzone dla 500 replikacji_
+
+
+\newpage
+# Zadanie 1
+
+Zadaniem jest estymacja wartoœci krytycznej testu H-C dla $p\in{5000,50000,500000}$ na poziomie istotnoœci
+$\alpha=0.05$. Estymacja przy u¿yciu zadanej wy¿ej postaci statystyki $HC_n^*$ jest skomplikowana numerycznie.
+Zauwa¿my, ¿e mo¿emy zamiast szukaæ po zbiorze wszystkich $\alpha$ mo¿emy przebiegaæ zbiór p-wartoœci.
+Wtedy statystyka bêdzie mia³a postaæ
+$$HC_n^*=\max_{p_i\le\alpha_0}\frac{\hat{F_n}(p_i)-p_i}{\sqrt{p_i(1-p_i)/n}}$$
+P-wartoœci do symulacji wyliczamy z wzoru
+$$p_i=2\Phi(-|X_i|)$$
+Gdzie $X_i$ pochodz¹ z odpowiedniego rozk³adu normalnego.
+Zak³adamy, ¿e przy $H_0$ p-wartoœci powinny miec rozk³ad jednostajny, dlatego porównamy wyniki naszych symulacji z symulacjami, 
+gdzie p-warotœci bêd¹ w³aœnie z takiego rozk³adu pochodzi³y.
+
+```{r exec1, include=FALSE}
+
+alpha = 0.05
+p_vector = c(5000, 50000, 500000)
+rep = repNum1
+crit_values_a = numeric(3)
+uniform_values_a = numeric(3)
+
+HCstat <- function(col, n)
+{
+    col = sort(col[col <= 0.5])
+    iter = 1:length(col)
+    HC = max(sqrt(n) * ((iter/n) - col[iter])/sqrt(col[iter] * (1 - col[iter])))
+}
+
+j = 1
+for (p in p_vector)
+{
+    results = numeric(rep)
+    for (i in 1:rep)
+    {
+        X = rnorm(p)
+        P = 2 * pnorm(-abs(X))
+        results[i] = HCstat(P, p)
+    }
+    crit_values_a[j] = quantile(results, probs = 1 - alpha)
+    j = j + 1
+}
+
+j = 1
+for (p in p_vector)
+{
+    results = numeric(rep)
+    for (i in 1:rep)
+    {
+        P = runif(p)
+        results[i] = HCstat(P, p)
+    }
+    uniform_values_a[j] = quantile(results, probs = 1 - alpha)
+    j = j + 1
+}
+
+results1 = cbind(crit_values_a, uniform_values_a)
+colnames(results1) = c('$2\\Phi(-|X_i|)$', '$\\mathcal{U}[0,1]$')
+rownames(results1) = c("5000", "50000", "500000")
+
+HCquants=crit_values_a
+
+```
+
+
+```{r results1, results='asis', fig.width=8}
+
+rownames(results1) = c("5000", "50000", "500000")
+options(xtable.comment = FALSE)
+print(xtable(results1, caption = "Moce testów dla ka¿dego z przypadków"), sanitize.text.function=function(x){x})
+
+```
+
+Okaza³o siê, ¿e dopiero dla 10 000 symulacji wyniki zaczê³y siê do siebie zbli¿aæ, tutaj przedstawionmo wynika dla 100 000 symulacji.
+Dla 1000 symulacji ró¿nice pomiêdzy wartoœciami krytycznymi osi¹ga³y nawet 0.5.
+Prawdziwa wartoœæ krytyczna jest trudna do estymowania, ale mo¿emy ustaliæ, ze z pewnym prawdopodobieñstwem le¿y w przedziale 
+$(4.7-\theta, 4.7+\theta)$. 
+
+\newpage
+# Zadanie 2
+
+W kolejnym zadanie nale¿y porównaæ moce testów H-C, Bonferonniego, $\chi^2$, K-S oraz A-D przy testowaniu problemów z zadania czwartego
+z listy pierwszej, ponadto nalezy do³o¿yæ jedno zagadnienie testowania. Nie bedziemy przytaczaæ statystyk testowych, zosta³o to zrobione we
+wstêpie.
+Próbkê symulujemy z rozk³adu normalnego o wariancji równej jeden, a $p=5000$. Liczba sumulacji to tak¿e 5000.
+
+Dla przypomniania, bêdziemy rozpatrywaæ nastêpuj¹ce problemy testowania (hipoteza zerowa jest wspólna dla ka¿dego z nich):
+$$H_0:\mu_{1}=...=\mu_{5000}=0$$
+
+
+* A. $H_1:\mu_1=1.2\sqrt{2\log{p}}, \mu_2=...=\mu_{5000}=0$
+* B. $H_1:\mu_1=...=\mu_{1000}=0.15\sqrt{2\log{p}}, \mu_{1001}=...=\mu_{5000}=0$
+* C. $H_1:\mu_1=...=\mu_{100}=2, \mu_{101}=...=\mu_{5000}=0$   
+
+
+```{r exec2}
+
+rep = 5000
+alpha = 0.05
+p=5000
+k=1000
+
+mi_1=1.2*sqrt(2*log(p))
+mi_2=0.15*sqrt(2*log(p))
+
+pvalCalc = function(x)
+{
+    return (2*pnorm(-abs(x)))
+}
+
+runAllTests = function(u)
+{
+    rejectBonf = rejectHC = rejectChi = rejectKS = rejectAD = 0
+    
+    for(i in 1:rep)
+    {
+        data = rnorm(n = p, mean = u)
+        pval = pvalCalc(data)
+        if(min(pval) <= alpha/p)
+        {
+            rejectBonf = rejectBonf + 1
+        }
+        if(sum(data^2) > qchisq(1-alpha,p))
+        {
+            rejectChi = rejectChi + 1
+        }
+        
+		stat = HCstat(pval, p)
+        if(stat > 4.7143)
+        {
+            rejectHC = rejectHC + 1
+        }
+        if(ks.test(data,"pnorm")$p.value <= alpha)
+        {
+            rejectKS = rejectKS + 1
+        }
+        if(ad.test(data, null = "pnorm",0,1)$p.value <= alpha)
+        {
+        rejectAD = rejectAD + 1
+        }
+    }
+    
+    c(rejectHC,rejectBonf,rejectKS,rejectAD,rejectChi)/rep
+}  
+
+u = matrix(nrow = 3, ncol = p)
+u[1,] = c(mi_1, rep(0, length.out = p-1))
+u[2,] = c(rep(mi_2, length.out = 1000), rep(0, length.out = p-1000))
+u[3,] = c(rep(2, length.out = 100), rep(0, length.out = p-100))
+results = apply(u ,1 ,runAllTests)
+results = data.frame(results, row.names = c('HC','Bonf','KS','AD',"$\\chi^2$"))
+colnames(results) <- c("A", "B", "C")
+
+```
+
+Jak to w takich przypadkach, zasymulowaliœmy próbki z rozk³adu przy hipetezie alternatywnej i sprawdziliœmy jak 
+czêsto zosta³a odrzucona hipoteza zerowa, oto wyniki:
+
+```{r results2, results = 'asis'}
+# d
+options(xtable.comment = FALSE)
+print(xtable(results, caption = "Estymowane moce testów"), sanitize.text.function=function(x){x})
+
+```
+
+Widzimy, ¿e ka¿dy z testów nadaje siê do innego typu testowania.
+W przypadku ig³y w stogu siana najlepiej najmocniejszym testem jest korekta Bonferroniego. NieŸle radzi sobie tak¿e H-C.
+Pozosta³e testy maj¹ bardzo ma³¹ moc i nie nadaj¹ siê do tego typu zagadnieñ, bardzo czêsto pope³nialibyœmy b³¹d drugiego rodzaju.
+Do testowanie zagadnieñ wielu ma³ych efektów nadaja siê wszystkie trzy wymienone wy¿ej testy, bez Korekty Bonferonniego oraz H-C.
+Ponadto, dla zagadnienia trzeciego, dobrze spisuj¹ siê testy H-C, $\chi^2$, A-D, przy czym ten ostatni delikatnie odstaje od pozosta³ych. 
+H-C wydaje siê byæ najbardziej "uniwersalny" ze wszystkich piêciu.
+
+\newpage
+# Zadanie 3
+
+W pierwszej czêsci tego zadania nale¿y wysymulowaæ wartoœci krytyczne dla testu N-P w testowaniu w mieszaninach 
+rzadkich z ró¿nymi parametrami, w drugiej nale¿y porównaæ jego moc do mocy testów z poprzedniego zadania.
+Bêdziemy badaæ moce testów dla wszystkich mo¿liwych kombinacji nastêpuj¹cych zbiorów: $p\in\{5000, 5000, 50000\}$,
+$\beta\in\{0.6, 0.8\}$, $r\in\{0.1, 0.2, 0.3, 0.4\}$. Sposób parametryzacji wprowadziliœmy we wstêpie.
+
+## Czêœæ A
+
+Wyniki symulacji:
+
+```{r exec3a, results = 'asis'}
+alpha = 0.05
+BETA = c(0.6,0.8)
+P = c(5000,50000,500000)
+R = c(0.1,0.2,0.3,0.4)
+howmany = 500
+options(xtable.comment = FALSE)
+
+crit1 = matrix(nrow = 3, ncol = 4)
+crit2 = matrix(nrow = 3, ncol = 4)
+fillCrit = function(beta)
+{
+	crit = matrix(nrow = 3, ncol = 4)
+	for(i in 1:3)
+	{
+		for(j in 1:4)
+		{
+			L = vector(length = howmany)
+			for(k in 1:howmany)
+			{
+				p = P[i]
+				r = R[j]
+				eps = p^(-beta)
+				data = rnorm(p)
+				mi = sqrt(2*r*log(p))
+				y = (1 - eps) + eps*exp(mi*data - (mi^2)/2)
+				L[k] = prod(y)
+			}
+			crit[i,j] <- quantile(L,probs = c(0.95))
+		}
+	}
+	
+	crit
+}
+crit1 = fillCrit(BETA[1])
+crit2 = fillCrit(BETA[2])
+crit1 = data.frame(crit1, row.names = P)
+colnames(crit1) = R
+crit2 = data.frame(crit2, row.names = P)
+colnames(crit2) = R
+print(xtable(crit1), file="crit1.tex", floating=FALSE)
+print(xtable(crit2), file="crit2.tex", floating=FALSE)
+
+runAllTestsNew = function(i,j,k)
+{
+	rejectNP = rejectHC = rejectBonf = 	rejectKS = rejectAD = rejectChi = 0
+	crit = matrix(nrow = 3, ncol = 4)
+	
+	if(i == 1)
+	{
+		crit = crit1
+	} else
+	{
+		crit = crit2
+	}
+	
+	beta = BETA[i]
+	p = P[j]
+	r = R[k]
+  
+	for(i in 1:howmany)
+	{
+		eps = p^(-beta)
+		u = c(0,sqrt(2*r*log(p)))
+		components = sample(1:2,prob = c(1-eps,eps), size=p, replace = TRUE)
+		data = rnorm(n = p, mean = u[components])
+		mi = u[2]
+		y = (1 - eps) + eps*exp(mi*data - (mi^2)/2)
+		L = prod(y)
+		pval = pvalCalc(data)
+		
+		if(min(pval) <= alpha/p)
+		{
+			rejectBonf = rejectBonf + 1
+		}
+		if(sum(data^2) > qchisq(1-alpha,p))
+		{
+			rejectChi = rejectChi + 1
+		}
+		
+		stat = HCstat(pval, p)
+		
+		if(stat > HCquants[j])
+		{
+			rejectHC = rejectHC + 1
+		}
+		if(ks.test(data,"pnorm")$p.value < alpha)
+		{
+			rejectKS = rejectKS + 1
+		}
+		if(ad.test(data, null = "pnorm",0,1)$p.value < alpha)
+		{
+			rejectAD = rejectAD + 1
+		}
+		if(L > crit[j,k])
+		{
+			rejectNP = rejectNP + 1
+		}
+	}
+	c(rejectNP,rejectHC,rejectBonf,rejectKS,rejectAD,rejectChi)/howmany
+}
+
+
+```
+
+\begin{table}[ht]
+    \centering
+    \subfloat[$\beta = 0.6$]{\label{tab:tab1a}{\input{./crit1}}}\quad
+    \subfloat[$\beta = 0.8$]{\label{tab:tab1b}{\input{./crit2}}}
+    \caption{Wartoœci krytyczne testu N-P}
+    \label{tab:tab1}
+\end{table}
+
+Wraz ze wzrostem parametrów $r$ oraz $\beta$ rosnie wartoœæ krytyczna testu, co zdaje siê byc intuicyjne.
+
+## Czêœæ B
+
+Przy u¿yciu powy¿szych wartoœci porównamy moc testu N-P oraz testów z poprzedniego zadania
+
+```{r exec3b, results = 'asis'}
+# fd
+results = matrix(nrow = 24, ncol = 6)
+for(i in 1:2)
+{
+    for(j in 1:3)
+    {
+        for(k in 1:4)
+        {
+            results[(i-1)*12+(j-1)*4+k,] = runAllTestsNew(i,j,k)
+        }
+    }
+}
+
+eksperyment = data.frame(matrix(nrow = 24, ncol = 3), row.names = seq(1,24,by = 1))
+eksperyment = data.frame(matrix(nrow = 24, ncol = 3), row.names = seq(1,24,by = 1))
+eksperyment[,1] = rep(BETA, each = 12)
+eksperyment[,2] = rep(P, times = 2, each = 4)
+eksperyment[,3] = rep(R , times = 6)
+results = data.frame(results)
+results = cbind(eksperyment, results)
+colnames(results) <- c('$\\beta$','$p$' ,'$r$', 'NP','HC','Bonf','KS','AD',"$\\chi^2$")
+
+options(xtable.comment = FALSE)
+print(xtable(results, caption = "Moce testów dla podanych parametrów"), sanitize.text.function=function(x){x})
+
+```
+
+Widzimy, ¿e wraz ze wzrostem parametrów $p$ oraz $r$ moce testu N-P roœnie, z kolei wzrost $\beta$ powoduje spadek mocy.
+Jest to ooczywiste - wraz ze wzrostem $\beta$ oraz $p$ dzia³aj¹ w przeciwny sposób na parametr $\epsilon$ naszego modelu.
+
+\newpage
+# Zadanie 4
+
+W poleceniu ostatnim naszym zadaniem jest zasymolowaæ dwa rodzaje trajektorii - Most Browna $B(t)$ oraz proces $U_p(t)$ zdefiniowany nastêpuj¹co
+$$
+U_p(t)=\sqrt{p}(F_p(t)-(t))\\
+F_p(t)=\frac{|i:p_i\le t|}{t}
+$$
+
+gdzie $p_i$ to p-wartoœci wygenerowane ze standardowego rozk³adu normalnego.
+Na poni¿szym wykresie prezentujemy po 5 trajektorii z ka¿dego z procesów.
+
+```{r exec4, fig.height=6, fig.width=9}
+# fd
+brown = matrix(nrow = 1000, ncol = 5000)
+empir = matrix(nrow = 1000, ncol = 5000)
+for(i in 1:1000)
+{
+	brown[i,] = rbridge(frequency = 5000)
+	empir[i,] = pvalCalc(rnorm(5000))
+}
+
+x = seq(0,1,length.out = 5000)
+mycol1 = topo.colors(2)
+plot(x,brown[1,], type = 'l', col = mycol1[1], ylim = c(-1.5,1.5), main = "Most Browna i Proces U", ylab = "", xlab = "")
+lines(x,brown[2,], type = 'l', col = mycol1[1])
+lines(x,brown[3,], type = 'l', col = mycol1[1])
+lines(x,brown[4,], type = 'l', col = mycol1[1])
+lines(x,brown[5,], type = 'l', col = mycol1[1])
+
+mycol2 = heat.colors(5)
+fn1 = ecdf(empir[1,])
+lines(x, sqrt(5000)*(fn1(x) - x), col = mycol1[2])
+fn2 = ecdf(empir[2,])
+lines(x, sqrt(5000)*(fn2(x) - x), col = mycol1[2])
+fn3 = ecdf(empir[3,])
+lines(x, sqrt(5000)*(fn3(x) - x), col = mycol1[2])
+fn4 = ecdf(empir[4,])
+lines(x, sqrt(5000)*(fn4(x) - x), col = mycol1[2])
+fn5 = ecdf(empir[5,])
+lines(x, sqrt(5000)*(fn5(x) - x), col = mycol1[2])
+legend("bottomright", c("Most Browna","Proces U"), col = c(mycol1), pch = 15)
+
+maxBrown = vector(length = 1000)
+maxEmpirical = vector(length = 1000)
+for(i in 1:1000)
+{
+	maxBrown[i] = max(abs(brown[i,]))
+	fn = ecdf(empir[i,])
+	maxEmpirical[i] = max( sqrt(5000)*abs(fn(x) - x) )
+}
+
+quants = vector(length = 2)
+quants[1] = quantile(maxBrown, probs = c(0.8))
+quants[2] = quantile(maxEmpirical, probs = c(0.8))
+
+```
+
+Z wykresu, trudno jest jednoznacznie coœ wywnioskowaæ, jednak¿e gdyby nie legenda procesy by³oby trudno rozró¿niæ.
+W celu analizy podobieñstwa porównamy kwantyle próbkowe rzêdu 80% dla statystyk 
+$T_1 = \sup_{t\in(0,1)}|B(t)|$ oraz $T_2 = sup_{t\in(0,1)}|U_p(t)|$. 
+Wynosz¹ one odpowiednio `r quants[1]` oraz `r quants[2]`, co potwierdza teoriê przedstawion¹ na wyk³adzie mówiac¹, 
+¿e $T1 \xrightarrow{p\rightarrow\infty} T2$. Kwantyle zosta³y wyliczone dla 1000 replikacji.
+

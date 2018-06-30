@@ -1,0 +1,319 @@
+---
+title: "Teoria analizy du¿ych zbiorów - Lista V"
+author: "Makowski Micha³"
+date: "31 maja 2017"
+output:
+  pdf_document:
+    fig_caption: yes
+    highlight: tango
+    number_sections: yes
+    toc: yes
+header-includes:
+- \usepackage{booktabs}
+- \usepackage{subfig}
+- \usepackage{graphicx}
+lang: pl-PL
+geometry: margin=1cm
+subtitle: Estymacja œredniej rozk³adu 
+fontsize: 10pt
+---
+
+```{r knitrOptions, include=FALSE}
+
+inline_hook=function(x) { if (is.numeric(x)) { format(x, digits=5) } else x}
+
+knitr::knit_hooks$set(inline=inline_hook)
+knitr::opts_chunk$set(comment="", message=FALSE, echo=FALSE, warning=FALSE, error=FALSE, 
+                      tidy.opts=list(keep.blank.line=TRUE, width.cutoff=120),
+                      options(width=100), fig.align='center', fig.height=6, 
+                      # cache = TRUE,
+                      fig.width=10, fig.path='figure/plot-', fig.show='hold', size='footnotesize')
+
+```
+
+```{r libraries, include=FALSE}
+
+rm(list=ls())
+
+library(MASS, quietly=TRUE)
+library(matrixcalc, quietly=TRUE)
+library(xtable, quietly=TRUE)
+
+
+options(width=100)
+
+```
+
+\newpage 
+
+# Wstêp
+
+W nimniejszym raporcie umieszczone zosta³y rozwi¹zania pi¹tej listy zadañ z przedmiotu 
+__Teoria analizy du¿ych zbiorów__ prowadzonego przez Pani¹ Profesor Ma³gorzatê Bogdan we 
+wspó³pracy z Panem Micha³em Kosem. Na tej¿e liœcie poruszony zosta³ problem estymacji œredniej w przypadku 
+wielowymiarowego rozk³adu normalnego. Poni¿ej przedstawimy cztery estymatory u¿ywane w kolejnych æwiczeniach.
+
+## Za³o¿enia i definicje
+
+Zak³adamy, ¿e dysponujemy pojedyncz¹ obserwacj¹ $X$ z $p$-wymiarowego rozk³adu normalnego $N(\mu,I)$,
+gdzie $\mu$ to wektor œrednich, a $\Sigma$ to macierz kowariancji. 
+
+Do oceny estymatorów u¿yjemy estymatora b³êdu œredniokwadratowego [MSE] zdefinowanego nastêpuj¹co
+$$\operatorname{MSE}=\frac{1}{p}\sum_{i=1}^p(X_i - \hat{X_i})^2$$
+gdzie $X_i$ oraz $\hat{X}_i$ to odpowiednio $i$-ta wspó³rzêdna i estymator jej œredniej.
+
+## Estymatory
+
+### Estymator najwiêkszej wiarygodnoœci
+
+Najprostszy estymator, to estmator najwiêkszej wiarygodnoœci, który w przypadku wielowymiarowego rozk³adu
+normalnego jest œredni¹ obserwacji $X$. Mamy wiêc 
+$$\hat{\mu}_{MLE} = X \qquad \text{[œrednia]}.$$
+
+### Estymator Jamesa-Steina
+
+Estymator Jamesa-Steina, to estmator który, zgodnie z teori¹, powinien wykazywaæ mniejszy b³¹d 
+œredniokwadratowy ni¿ estymator najwiêkszej wiarygodnoœci. Zadany jest on wzorem
+$$\hat{\mu}_{JS} = \left( 1-\frac{p-2}{\|X\|^2}\right)X.$$
+
+### Estymator empriyczny Bayesa
+
+Estymator empiryczny Bayesa, to estmator który, wykorzystuje statystyke Bayesowsk¹ do estymacji, 
+wykorzystuje pozosta³e obserwacje do estymacji rozk³adu a priori. 
+Zdefiniowany jest osobno dla ka¿dego elementu wektora $\mu$ poprzez
+$$\hat{\mu}_{i_{EB}} = \bar{X} + \left( 1-\frac{p-3}{S}\right)(X_i-\bar{X}),$$
+gdzie $S=\sum_{i=1}^p(X_i-\bar{X})^2$ a $\bar{X}$ to oczywiœcie œrednia wszystkich obserwacji.
+
+### Estymator Jamesa-Steina z modyfikacja Mary Ellen Bock (1975)
+
+Jest to modyfikacja estymatora JS, która pozwala na estymacjê, gdy zmienne s¹ od siebie zale¿ne.
+Zadany jest on poprzez
+$$\hat{\mu}_{MEB} = \left( 1-\frac{\hat{p}-2}{X^T\Sigma^{-1}X}\right)X,$$
+gdzie $\hat{p}=\frac{Tr(\Sigma)}{\lambda_{max}(\Sigma)}$, a $Tr(\Sigma)$ i $\lambda_{max}(\Sigma)$ 
+to odpowiednio œlad i najwiêksza wartoœæ w³asna macierzy $\Sigma$.
+
+\newpage
+#Zadanie 1
+
+W zadaniu pierwszym porównamy pierwsze trzy estymatory w trzech róznych wypadkach:
+
+* A. $\mu=0$,
+* B. $\mu$ pochodzi z rozk³adu $N(0,5I)$,
+* C. $\mu_i \sim N(20,5)$.
+
+Oczywiœcie $X=(X_1,X_2,...,X_p)\sim N(\mu,I)$. Przyjeliœmy $p=500$.
+Miar¹ dobroci jest uœredniony b³¹d œredniokwadratowy dla 500 symulacji.
+
+Wyniki s¹ nastêpuj¹ce:
+```{r exercise1}
+
+repetitions = 500
+dimSize = 5
+
+
+MatrixNorm = function(matrix)
+{
+    apply(matrix, 2, function(x) sum(x^2))
+}
+
+SquareErrorSum = function(matrix)
+{
+    apply(matrix, 2, function(x) sum((x - mean(x))^2))
+}
+
+QuadraticLoss = function(matrix, meanVector)
+{
+    apply(matrix, 2, function(x) sum((x - meanVector)^2))/nrow(matrix)
+}
+
+EBayes = function(vector)
+{
+    results <- rep_len(0, length(vector))
+    j <- 1
+       
+    for(i in vector)
+    {
+        S <- sum((vector - mean(vector))^2)
+        results[j] = mean(vector) + (1 - (length(vector)-3)/S)*(i - mean(vector))
+        j = j + 1
+    }
+    
+    results
+}
+
+
+MLEmse <- function(matrix, meanVector)
+{
+    MLEestimator <- matrix
+    mean(QuadraticLoss(MLEestimator, meanVector))
+}
+
+JSmse <- function(matrix, meanVector)
+{
+    JSestimator <- t((1-(nrow(matrix)-2)/MatrixNorm(matrix))*t(matrix))
+    mean(QuadraticLoss(JSestimator, meanVector))
+}
+
+EBmse <- function(matrix, meanVector)
+{
+    EBestimator <- apply(matrix, 2, EBayes)
+    mean(QuadraticLoss(EBestimator, meanVector))
+}
+
+set.seed(20)
+
+meanDistributionParameters <- list(c(0,0), c(0, sqrt(5)), c(20, sqrt(5))) 
+results <- matrix(0, nrow = length(meanDistributionParameters), ncol = 3)
+j <- 1
+parameters <- meanDistributionParameters[[2]]
+for(parameters in meanDistributionParameters)
+{
+    meanVector <- rnorm(dimSize, mean = parameters[1], sd = parameters[2])
+    normalMatrix <- matrix(rnorm(repetitions*dimSize, mean = meanVector), ncol = repetitions)
+
+    results[j,1] <- MLEmse(normalMatrix, meanVector)
+    results[j,2] <- JSmse(normalMatrix, meanVector)
+    results[j,3] <- EBmse(normalMatrix, meanVector)
+    
+    j = j + 1
+}
+
+results = data.frame(results, row.names = c("A", "B", "C"))
+colnames(results) <- c('MLE','JS','EB')
+
+```
+
+
+```{r results1, results = 'asis'}
+
+options(xtable.comment = FALSE)
+print(xtable(results, caption = "Estymowane b³êdy œredniokwadratowe", digits =5),
+      sanitize.text.function=function(x){x})
+
+```
+
+Z symulacji mo¿emy wyci¹gn¹c nastêpuj¹ce wnioski:
+
+* Estymator $MLE$ daje zdecydowanie gorsze wyniki ni¿ pozosta³e, bior¹c pod uwagê $\operatorname{MSE}$
+* Przy za³o¿eniu rozk³adu a priori parametru $\mu$ estymator JS jest lepszy lub równy estymatorowi
+Bajesowskiemu w mierze blêdu œredniokwadratowego. 
+
+Obydwa spostrze¿enia pokrywaj¹ siê z teori¹ przedstawion¹ na wyk³adzie.
+
+# Zadanie 2
+
+Zadanie drugie porusza to samo zagadnienie co zadanie pierwsze, z tym, ¿e zak³adamy tutaj, ¿e macierz kowariancji
+nie jest macierz¹ diagonaln¹. W takim przypadku powinniœmy zastosowaæ estymator MEB. Problemem jest tutaj 
+wymaganie dot. znajomoœci macierzy kowariancji rozk³adu.
+
+Zak³adamy, ¿e $X=(X_1,X_2,...,X_p)\sim N(\mu,\Sigma)$, gdzie $\Sigma_{i,i}=1$, a $\Sigma_{i,j}=0.7$ dla 
+$i\ne j$. Pozosta³e parametry jak w zadaniu pierwszym.
+
+Otrzymane wyniki:
+
+```{r exercise2a}
+
+repetitions = 500
+dimSize = 5
+
+JSMEBmse <- function(matrix, meanVector, covarianceMatrix)
+{
+    eigenValues <- eigen(covarianceMatrix)$values
+    pHat <- sum(diag(covarianceMatrix))/max(eigenValues)
+    denominator <- apply(matrix, 2, function(x)  as.numeric(x %*% matrix.inverse(covarianceMatrix) %*% x))
+
+    JSMEBestimator <- t((1-(pHat-2)/denominator)*t(matrix))
+    mean(QuadraticLoss(JSMEBestimator, meanVector))
+}
+
+set.seed(20)
+
+meanDistributionParameters <- list(c(0,0), c(0, sqrt(5)), c(20, sqrt(5))) 
+covarianceMatrix <- matrix(0.7, ncol = dimSize, nrow = dimSize) + diag(0.3, ncol = dimSize, nrow = dimSize)
+
+eigenValues <- eigen(covarianceMatrix)$values
+pHat <- sum(diag(covarianceMatrix))/max(eigenValues)
+
+results <- matrix(0, nrow = length(meanDistributionParameters), ncol = 2)
+j <- 1
+
+for(parameters in meanDistributionParameters)
+{
+    meanVector <- rnorm(dimSize, mean = parameters[1], sd = parameters[2])
+    
+    normalMatrix <- t(mvrnorm(n = repetitions, mu = meanVector, Sigma = covarianceMatrix))
+
+    results[j,1] <- MLEmse(normalMatrix, meanVector)
+    results[j,2] <- JSMEBmse(normalMatrix, meanVector, covarianceMatrix)
+
+        1-pHat/as.numeric(normalMatrix[,1] %*% matrix.inverse(covarianceMatrix) %*% normalMatrix[,1])
+
+    j = j + 1
+}
+
+results = data.frame(results, row.names = c("A", "B", "C"))
+colnames(results) <- c('MLE','MEB')
+
+```
+
+```{r results2a, results = 'asis'}
+
+options(xtable.comment = FALSE)
+print(xtable(results, caption = "Estymowane b³êdy œredniokwadratowe, niezerowa korelacja I", digits =5),
+      sanitize.text.function=function(x){x})
+
+```
+
+Zaobserwowana ró¿nica pomiêdzy estymatorem MLE, a MEB jest znikoma wrêcz na niekorzyœæ MEB.
+Wynika to z niskiej wartoœci $\hat{p}$, równej `r pHat`. 
+Przytaczaj¹c teoriê podan¹ na wyk³adzie, dopiero je¿eli $\hat{p}\ge2$ to estymator
+MEB ma mniejszy $\operatorname{MSE}$ ni¿ MLE.
+
+```{r pHat2b}
+
+covarianceMatrix <- matrix(0.2, ncol = dimSize, nrow = dimSize) + diag(0.8, ncol = dimSize, nrow = dimSize)
+
+eigenValues <- eigen(covarianceMatrix)$values
+pHat <- sum(diag(covarianceMatrix))/max(eigenValues)
+
+```
+
+
+Sprawd¿my co siê stanie, gdy zmodyfikujemy nasz problem 
+$X=(X_1,X_2,...,X_p)\sim N(\mu,\Sigma)$, gdzie $\Sigma_{i,i}=1$, a $\Sigma_{i,j}=0.2$ dla 
+$i\ne j$. Dla takich parametrów $\hat{p}$ jest równe `r pHat`. Reszta parametrów pozostaje bez zmian.
+
+```{r 2exerciseb}
+
+set.seed(20)
+
+results <- matrix(0, nrow = length(meanDistributionParameters), ncol = 2)
+j <- 1
+
+for(parameters in meanDistributionParameters)
+{
+    meanVector <- rnorm(dimSize, mean = parameters[1], sd = parameters[2])
+    
+    normalMatrix <- t(mvrnorm(n = repetitions, mu = meanVector, Sigma = covarianceMatrix))
+
+    results[j,1] <- MLEmse(normalMatrix, meanVector)
+    results[j,2] <- JSMEBmse(normalMatrix, meanVector, covarianceMatrix)
+
+    j = j + 1
+}
+
+results = data.frame(results, row.names = c("A", "B", "C"))
+colnames(results) <- c('MLE','MEB')
+
+```
+
+```{r results2b, results = 'asis'}
+
+options(xtable.comment = FALSE)
+print(xtable(results, caption = "Estymowane b³êdy œredniokwadratowe, niezerowa korelacja II", digits =5),
+      sanitize.text.function=function(x){x})
+
+```
+
+Widoczna jest bardzo ma³a poprawa estymatora, co zgodne jest z teori¹. Jest ona jednak na tyle ma³a, ¿e warto
+by³oby zastanowiæ siê na prêdkoœcia oddalania siê estymatorów od siebie. Pozostawimy to jako problem otwarty.

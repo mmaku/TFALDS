@@ -1,0 +1,250 @@
+---
+title: "Teoria analizy du¿ych zbiorów - Lista IV"
+author: "Makowski Micha³"
+date: "14 czerwiec 2017"
+output:
+  pdf_document:
+    fig_caption: yes
+    highlight: tango
+    keep_tex: yes
+    number_sections: yes
+    toc: yes
+header-includes:
+- \usepackage{booktabs}
+- \usepackage{subfig}
+- \usepackage{graphicx}
+- \usepackage{amsmath}
+- \DeclareMathOperator*{\argmax}{arg\,max}
+lang: pl-PL
+geometry: margin=1cm
+subtitle: Ryzyko estymacyjne 
+fontsize: 10pt
+---
+
+```{r knitrOptions, include=FALSE}
+
+inline_hook=function(x) { if (is.numeric(x)) { format(x, digits=5) } else x}
+
+knitr::knit_hooks$set(inline=inline_hook)
+knitr::opts_chunk$set(comment="", message = FALSE, echo = FALSE, warning = FALSE, error = FALSE,
+                      tidy.opts = list(keep.blank.line = TRUE, width.cutoff = 120),
+                      options(width = 100), fig.align = 'center', fig.height = 6, 
+                      # cache = TRUE,
+                      fig.width = 10, fig.path = 'figure/plot-', fig.show = 'hold', size = 'footnotesize')
+
+```
+
+```{r libraries, include=FALSE}
+
+rm(list=ls())
+
+library(xtable, quietly=TRUE)
+load('zadanie1.rda')
+load('zadanie2.rda')
+load('zadanie3.rda')
+load('zadanie4.rda')
+load('zadanie5.rda')
+options(width=100)
+
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+
+```
+
+# Wstêp
+
+W nimniejszym raporcie umieszczone zosta³y rozwi¹zania szstej listy zadañ z przedmiotu 
+__Teoria analizy du¿ych zbiorów__ prowadzonego przez Pani¹ Profesor Ma³gorzatê Bogdan we 
+wspó³pracy z Panem Micha³em Kosem. Na tej¿e liœcie poruszony zosta³ problem kontroli FWER, FDR oraz mocy w problemie testowania.
+
+## Definicje
+
+### Tabela kontyngencji
+
+Tabela kontyngencji dana jest poprzez:
+
+
+|           | zaakceptowana | odrzucona | suma  |
+|-----------|:-------------:|:---------:|-------|
+| prawdziwa |       U       |     V     | n_0   |
+| fa³szywa  |       T       |     S     | n-n_0 |
+| suma      |      n-R      |     R     | n     |
+
+
+### Familywise error rate
+
+$FWER = P(V\ge1)$
+
+### False discovery proportion
+
+$Fdp = V/R*\mathbb{1}_{R\ge1}$
+
+### False discovery rate
+
+$FDR = E[Fdp]$
+
+### Procedury testowania wielokrotnego
+
+#### Bonferroni
+
+Procedura odrzuca dan¹ hipotezê, gdy p-wartoœc testu jest mniejsze ni¿ $\alpha/n$
+
+#### Holm
+
+Posortowane rosn¹co p-wartoœci porównujemy z wyra¿eniem $p_{(j+1)}\leq\alpha/(n-j)$. Procedura znajduje pierwsz¹, najmniejsz¹,
+nie spe³niaj¹c¹ tej zale¿noœci i odrzuca wszystkie hipotezy o mniejszej p-wartoœc od znalezionej.
+
+#### Hochberg
+
+Posortowane rosn¹co p-wartoœci porównujemy z wyra¿eniem $p_{(j)}>\alpha/(n-j+1)$. Procedura znajduje pierwsz¹, najwiêksz¹,
+nie spe³niaj¹c¹ tej zale¿noœci i odrzuca wszystkie hipotezy o mniejszej p-wartoœc od znalezionej.
+
+#### Holm
+
+Posortowane rosn¹co p-wartoœci porównujemy z wyra¿eniem $p_{(i)}\leq\alpha*i/n$. Procedura znajduje najwiêksz¹ spe³niaj¹c¹
+t¹ zale¿noœæ i odrzuca wszystkie hipotezy o mniejszej lub równej p-wartoœc od znalezionej.
+
+\newpage
+
+# Zadanie 1
+
+W zadaniu nale¿a³o porównaæ FWER, FDR oraz moc (stosunek wykrytych hipotez alternatywnych do wszystkich hipotez alternatywnych)
+w nastêpuj¹cym problemie "niskowymiarowym".
+
+Niech $p=20$, dla $i=1,...,10$ $\mu_i=\sqrt{2\ln(20/i)}$, dla pozosta³ych $\mu_i=10$.
+
+Charakterystki podane powy¿ej porównujemy dla nastêpuj¹cych procedur:
+
+* Korekta Bonferonniego
+* Procedura Holma
+* Procedura Hochberga
+* Procedura Benjaminiego-Hochberga.
+
+Oto otrzymane  wyniki:
+
+```{r exercise1}
+
+zadanie1 %>%
+    group_by(metoda, stat) %>%
+    summarise_all(mean) %>%
+    spread(stat, wartosc) -> results
+
+colnames(results) <- c("Metoda", "FDR", "FWER", "Moc")
+
+```
+
+```{r results1, results = 'asis'}
+
+options(xtable.comment = FALSE)
+print(xtable(results, caption = "Kontrola FDR, FWER i Mocy", digits =4),
+      sanitize.text.function=function(x){x}, include.rownames = F)
+
+```
+
+
+
+\newpage
+# Zadanie 2 
+
+Analogicznie jak w zadaniu pierwszym, w zadaniu drugim nale¿a³o porównaæ FWER, FDR oraz moc.
+Tym razem rozpatrujemy nastêpuj¹ce problemy "wysokowymiarowe".
+
+* A. $\mu_1=1.2\sqrt{2\ln(p)}, \mu_1=...=\mu_{p}=0$,
+* B. $\mu_1=...=\mu_{1000}=0.15\sqrt{2\ln(p)}, \mu_{1001}=...=\mu_{p}=0$,
+* C. $\mu_1=...=\mu_{100}=2, \mu_{101}=...=\mu_{p}=0$,
+* D. $\mu_1=...=\mu_{100}=\sqrt{2\ln(p)}, \mu_{101}=...=\mu_{p}=0$.
+
+Przyjmujemy $p=5000$.
+
+Pozosta³a czêœæ zadania jak w zadaniu 1.
+Z racji z³o¿onoœci obliczeniowej do kalkulacji pos³u¿ono siê pakietem **doParallel**.
+
+Otrzymane wyniki:
+
+```{r exercise2}
+
+zadanie2 %>%
+    group_by(metoda, stat) %>%
+    summarise_all(mean) %>%
+    spread(stat, wartosc) -> results
+
+colnames(results) <- c("Metoda", "FDR", "FWER", "Moc")
+
+```
+
+```{r results2, results = 'asis'}
+
+options(xtable.comment = FALSE)
+print(xtable(results, caption = "Problem A", digits =4),
+      sanitize.text.function=function(x){x}, include.rownames = F)
+
+```
+
+```{r exercise3}
+
+zadanie3 %>%
+    group_by(metoda, stat) %>%
+    summarise_all(mean) %>%
+    spread(stat, wartosc) -> results
+
+colnames(results) <- c("Metoda", "FDR", "FWER", "Moc")
+
+```
+
+```{r results3, results = 'asis'}
+
+options(xtable.comment = FALSE)
+print(xtable(results, caption = "Problem B", digits =4),
+      sanitize.text.function=function(x){x}, include.rownames = F)
+
+```
+
+```{r exercise4}
+
+zadanie4 %>%
+    group_by(metoda, stat) %>%
+    summarise_all(mean) %>%
+    spread(stat, wartosc) -> results
+
+colnames(results) <- c("Metoda", "FDR", "FWER", "Moc")
+
+```
+
+```{r results4, results = 'asis'}
+
+options(xtable.comment = FALSE)
+print(xtable(results, caption = "Problem C", digits =4),
+      sanitize.text.function=function(x){x}, include.rownames = F)
+
+```
+
+```{r exercise5}
+
+zadanie5 %>%
+    group_by(metoda, stat) %>%
+    summarise_all(mean) %>%
+    spread(stat, wartosc) -> results
+
+colnames(results) <- c("Metoda", "FDR", "FWER", "Moc")
+
+```
+
+```{r results5, results = 'asis'}
+
+options(xtable.comment = FALSE)
+print(xtable(results, caption = "Problem D", digits =4),
+      sanitize.text.function=function(x){x}, include.rownames = F)
+
+```
+
+Widoczne jest inne zachowanie procedur dla ka¿dego z problemów. Bardzo ciekawe jest to, ¿e dla ka¿dego z nich nie by³o ró¿nic
+pomiedzy metodami Bonferroniego, Hochberga i Holmesa. 
+
+Zastanawiaj¹ce jest to, ze wyniki FDR dla BH wcale nie s¹ lepsze ni¿ dla pozosta³ych procedur, a to BH kontoluje FDR na 
+poziomie $\q$. 
+
+Ponadto, dla ka¿dego problemu wyniki dla trzech ostatnich procedur s¹ takie same, a pokazano, na wyk³adzie, ¿e 
+procedury Holma i Hochberga kontroluj¹ FWER na tym samym poziomie, ale procedura Hochberga jest mocniejsza.
+
+Nie doszukano siê b³êdów programistycznych.

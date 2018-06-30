@@ -1,0 +1,420 @@
+---
+title: "Lista I"
+author: "Makowski Micha³"
+date: "9 marca 2017"
+output: 
+  pdf_document: 
+    fig_caption: true
+    highlight: tango
+    toc: true
+fontsize: 10pt
+geometry: margin=1.5cm
+subtitle: 'Korekta Bonferonniego' 
+lang: pl-PL 
+---
+
+```{r knitrOptions, include=FALSE}
+
+knitr::opts_chunk$set(fit.align="center", echo=FALSE, warning=FALSE,
+error=FALSE, message=FALSE)
+
+inline_hook = function(x) { if (is.numeric(x)) { format(x, digits=2) } else x}
+
+knitr::knit_hooks$set(inline=inline_hook)
+knitr::opts_chunk$set(comment="", message=FALSE, tidy.opts=list(keep.blank.line=TRUE, width.cutoff=120),
+                      options(width=100), cache=TRUE, fig.align='center', fig.height=5.5,
+                      fig.width=10, fig.path='figure/plot-', fig.show='hold', size='footnotesize', cache=TRUE)
+
+```
+
+```{r libraries, include=FALSE}
+
+rm(list=ls())
+
+options(width=100)
+
+# install.packages("ggplot2")
+library(ggplot2, quietly = TRUE) 
+# install.packages("latex2exp")
+library(latex2exp, quietly = TRUE) 
+
+```
+
+\newpage 
+
+# Wstêp
+
+W nimniejszym raporcie umieszczone zosta³y rozwi¹zania pierwszej listy zadañ z przedmiotu __Teoria analizy du¿ych zbiorów__ 
+prowadzonego przez Pani¹ Profesor Ma³gorzatê Bogdan we wspó³pracy z Panem Micha³em Kosem. 
+G³ównym tematem w poruszanych zagadnieniach jest *korekta Bonferonniego*, która przydatna jest w przypadku, 
+gdy testujemy wiele hipotez na raz - pomaga ona wybraæ odpowiedni obszar krytyczny.
+
+\newpage
+
+# Zadanie I
+
+W zadaniu zdefiniowano trzy funkcje:
+$$g_1(t)=1-\phi(t)$$
+$$g_2(t)=\frac{\phi(t)}{t}$$
+$$g_3(t)=\phi(t)\frac{t}{1+t^2}$$
+
+gdzie $\Phi$ to dystrybuanta standardowego rozk³adu normalnego, a $\phi$ to jego gêstoœæ.
+Porównamy ich wartoœci na zbiorze $[0.2, 4]$ i graficznie "udowodnimy", ¿e nadaj¹ siê one do aproksymacji ogonów rozk³adu normalnego. 
+
+Wykres pierwszy:
+
+```{r 1comp}
+
+t     = seq(0.2, 4, 0.01)
+data1 = data.frame(t=t, g_1=1-pnorm(t), g_2=dnorm(t)/t, g_3=t/(1+t^2)*dnorm(t))
+
+ggplot(data=data1, aes(x=t)) +
+    geom_line(aes(y=g_1, color='green')) +
+    geom_line(aes(y=g_2, color='blue')) +
+    geom_line(aes(y=g_3, color='red')) +
+    guides(y="legend") +
+    labs(title="Porównanie funkcji aproksymuj¹cych ogony rozk³adu", y=TeX('$g_i(t)$')) +
+    scale_color_discrete(name="Funkcja",
+                        labels=lapply(c('$g_3(t)$', '$g_1(t)$', '$g_2(t)$'), TeX)) +
+    theme_minimal()
+
+```
+
+Jak widaæ dla du¿ych (wzglêdnie) wartoœci t powy¿sze funkcje s¹ nierozró¿nialne na wykresie. 
+Ponadto $g_3$ jest górnym ograniczeniem $\mathbb{P}(X>t)$, a $g_2$ jest ograniczeniem dolnym, w³asnoœæ ta wynika z nierównoœci Markova.
+
+\newpage
+
+Przyjrzyjmy siê jak maj¹ siê ilorazy $\frac{g_1}{g_2}$ oraz $\frac{g_1}{g_3}$:
+
+```{r 1ratioComp}
+
+ggplot(data=data1, aes(x=t)) +
+    geom_line(aes(y=g_1/g_2, color='blue')) +
+    geom_line(aes(y=g_1/g_3, color='red')) +
+    guides(y="legend") +
+    labs(title="Porównanie ilorazów funkcji aproksymuj¹cych", y=TeX('$g_i(t)$')) +
+    scale_color_discrete(name="Funkcja",
+                        labels=lapply(c('$g_1(t)/g_3(t)$', '$g_1(t)/g_2(t)$'), TeX)) +
+    theme_minimal()
+
+```
+
+Zgodnie z przewidywaniami, ilorazy $\frac{g_1}{g_2}$ oraz $\frac{g_1}{g_3}$ zbiegaj¹ do jedynki, odpowiednio z góry lub z do³u. 
+Dla $t=4$ ró¿nica $\vert g_1-g_2\vert$ równa siê `r abs(1-pnorm(4)-dnorm(4)/4)`, 
+a ró¿nica $\vert g_1-g_3\vert$ równa siê `r abs(1-pnorm(4)-4/(1+4^2)*dnorm(4))`,
+co pokazuje, ¿e aproksymacja ogonów rozk³adu normalnego przy pomocy funkcji $g_2$ oraz $g_3$ jest wystarczaj¹co dok³adna.
+
+\newpage 
+
+# Zadanie II
+
+Zdefiniujmy trzy funkcje:
+
+$$g_1(\alpha, p)=\Phi^{-1}\left(1-\frac{\alpha}{2p}\right)$$
+$$g_2(\alpha, p)=\sqrt{B-\log B}\TeXtrm{, gdzie }B=2\log\left(\frac{2p}{\alpha}\right)-\log(2\pi)$$
+$$c(p)=\sqrt{2\log(p)}$$
+
+przy czym pozosta³e oznaczenia s¹ jak w poprzednim zadaniu. 
+Porównamy wartoœci $g_2$ oraz $c$ z $g_1$ na zbiorze $\left[10^2, 10^9\right]$ i parametru $\alpha\in\{0.01, 0.1, 0.5\}$ 
+i po raz kolejny graficznie "udowodnimy", ¿e nadaj¹ siê one do aproksymacji kwantyli rozk³adu normalnego 
+przy obliczaniu go dla argumentów w powy¿szej postaci.
+
+Wszytkie poni¿sze wykresy u¿ywaj¹ skali logarytmicznej na osi X.
+
+Wykres pierwszy:
+
+```{r 2intro, include=FALSE}
+
+f1 = function(a, k)
+{
+    return(qnorm(1- a/(2*k))) 
+}
+
+c_fun = function(k)
+{
+  return(sqrt(2*log(k))) 
+}
+
+B_fun = function(alfa, p)
+{
+  return(2*log(2*p/alfa) - log(2*pi))
+} 
+  
+d_fun = function(alfa, p)
+{
+  return(sqrt(B_fun(alfa, p) - log(B_fun(alfa, p))))  
+}
+
+p = seq(from = 10^2, to = 10^9, by = 50000)
+m = min( f1(0.01, p), f1(0.1, p), f1(0.5, p))
+M = max( f1(0.01, p), f1(0.1, p), f1(0.5, p))
+
+data2 = data.frame(p=p, f_1_01=f1(0.01, p), f_1_1=f1(0.1, p), f_1_5=f1(0.5, p), c=c_fun(p))
+data3 = data.frame(p=p, f_1_01=f1(0.01, p), f_1_1=f1(0.1, p), f_1_5=f1(0.5, p), 
+                   g_01=d_fun(0.01, p), g_1=d_fun(0.1, p), g_5=d_fun(0.5, p))
+
+```
+
+
+```{r 2firstComp}
+
+ggplot(data=data2, aes(x=p)) +
+    geom_line(aes(y=f_1_01, color='green')) +
+    geom_line(aes(y=f_1_1, color='blue')) +
+    geom_line(aes(y=f_1_5, color='red')) +
+    geom_line(aes(y=c, color='yellow')) +
+    guides(y="legend") +
+    scale_x_log10() +
+    labs(title=paste(TeX("Porównanie aproksymacji funkcji kwantylowej dla ró¿nych"), TeX('$\\alpha$')), y=TeX('$g_i(\\alpha, p)$')) +
+    scale_color_discrete(name="Funkcja",
+                        labels=lapply(c('$c(p)$', '$g_1(0.1, p)$', '$g_1(0.01, p)$', '$g_1(0.5, p)$'), TeX)) +
+    theme_minimal()
+
+```
+
+Widoczna jest zbie¿noœæ funkcji kwantylowej postaci $\Phi^{-1}\left(1-\frac{1}{4p}\right)$ do $c(p)$. 
+Pozosta³e funkcje s¹ mniej wiêcej stale oddalone od $c(p)$, nawet dla bardzo du¿ych wartoœci $p$, czyli argumentom bardzo bliskim jednoœci.
+
+\newpage
+
+Na kolejnych trzech wykresach porównamy wartoœci funkcji $g_1$ oraz $g_2$
+
+
+```{r 2secondComp}
+
+ggplot(data=data3, aes(x=p)) +
+    geom_line(aes(y=f_1_01, color='green')) +
+    geom_line(aes(y=g_01, color='blue')) +
+    guides(y="legend") +
+    scale_x_log10() +
+    labs(title=paste(TeX("Porównanie funkcjiaproksymuj¹cych  dla"), TeX('$\\alpha=0.01$')), y=TeX('$g_i(\\alpha, p)$')) +
+    scale_color_discrete(name="Funkcja",
+                        labels=lapply(c('$g_1(0.01, p)$', '$g_2(0.01, p)$'), TeX)) +
+    theme_minimal()
+
+```
+
+```{r 2thirdComp}
+
+ggplot(data=data3, aes(x=p)) +
+    geom_line(aes(y=f_1_1, color='green')) +
+    geom_line(aes(y=g_1, color='blue')) +
+    scale_x_log10() +
+    guides(y="legend") +
+    labs(title=paste(TeX("Porównanie funkcjiaproksymuj¹cych  dla"), TeX('$\\alpha=0.1$')), y=TeX('$g_i(\\alpha, p)$')) +
+    scale_color_discrete(name="Funkcja",
+                        labels=lapply(c('$g_1(0.1, t)$', '$g_2(0.1, t)$'), TeX)) +
+    theme_minimal()
+
+```
+
+
+```{r 2fourthComp}
+
+
+ggplot(data=data3, aes(x=p)) +
+    geom_line(aes(y=f_1_5, color='green')) +
+    geom_line(aes(y=g_5, color='blue')) +
+    scale_x_log10() +
+    guides(y="legend") +
+    labs(title=paste(TeX("Porównanie funkcjiaproksymuj¹cych  dla"), TeX('$\\alpha=0.5$')), y=TeX('$g_i(\\alpha, p)$')) +
+    scale_color_discrete(name="Funkcja",
+                        labels=lapply(c('$g_1(0.5, t)$', '$g_2(0.5, t)$'), TeX)) +
+    theme_minimal()
+
+
+```
+
+Na powy¿szych wykresach widaæ, ¿e niezale¿nie od dobranego $\alpha$ obydwie funkcji przyjmuj¹ bardzo zbli¿one wartoœci, i to ju¿ dla ma³ych wartoœci argumentu $p$. 
+
+Zobaczymy jeszcze wygl¹daj¹ ilorazy tych¿e funkcji:
+
+```{r compRatio2}
+
+data3 = data.frame(p=p, 
+                   f_1_01=f1(0.01, p)/c_fun(p), f_2_01=f1(0.01, p)/d_fun(0.01, p),
+                   f_1_1=f1(0.1, p)/c_fun(p), f_2_1=f1(0.1, p)/d_fun(0.1, p),
+                   f_1_5=f1(0.5, p)/c_fun(p), f_2_5=f1(0.5, p)/d_fun(0.5, p))
+
+ggplot(data=data3, aes(x=p)) +
+    geom_line(aes(y=f_1_01, color='green')) +
+    geom_line(aes(y=f_2_01, color='blue')) +
+    geom_line(aes(y=f_1_1, color='red')) +
+    geom_line(aes(y=f_2_1, color='yellow')) +
+    geom_line(aes(y=f_1_5, color='black')) +
+    geom_line(aes(y=f_2_5, color='pink')) +
+    scale_x_log10() +
+    guides(y="legend") +
+    labs(title="Porównanie funkcji aproksymuj¹cych", y=TeX('$g_i(t)$')) +
+    # scale_color_discrete(name="Funkcja",
+    #                     labels=lapply(c('$g_1(0.5, p)/c(p)$' , '$g_1(0.01, p)/g_2(0.01, p)$',
+    #                                     '$g_1(0.01, p)/c(p)$', '$g_1(0.5, p)/g_2(0.5, p)$',
+    #                                     '$g_1(0.1, p)/c(p)$' , '$g_1(0.1, p)/g_2(0.1, p)$'), TeX)) +
+    theme_minimal()
+
+
+```
+
+Obserwacje z poprzednich wykresów pokrywaj¹ siê, w przypadku czêœci funkcji zbie¿noœæ nie istnieje 
+(albo jest bardzo powolna i w praktyce nie ma zastosowania).
+
+\newpage
+
+# Zadanie III
+
+Kolejnym zadaniem jest pieciokrotne wylosowanie próbki $Y_1,...,Y_p$ rozmiaru $p=10^8$ ze standardowego rozk³adu normalnego $N(0,1)$, 
+a nastêpnie obliczenie wartoœci funkcji $M_k=\max_{j\in\{1,...,k\}}\vert Y_j\vert$, gdzie $k=10^{ind}$, a $ind$ przebiega zbiór $\{1,...,8\}$.
+Po zasymulowanie funkcji nale¿a³o j¹ porównaæ do $g_k=\sqrt{2\log k}$, a ponadto narysowaæ wykres $M_k/g_k$.
+
+Wszytkie poni¿sze wykresy u¿ywaj¹ skali logarytmicznej na osi X.
+Z racji trudnoœci obliczeniowych znacz¹co zmniejszono $p$, do $10^6$.
+Ponadto $k$ przebiega ca³y zbiór liczba naturalnych, a nie tylko potêg dziesi¹tki. 
+
+Pierwszy wykres przedstawia wartoœci funkcji $g_k$ oraz $M_k$ dla piêciu symulacji:
+
+```{r 3intro}
+
+size = 10^6
+k = 1:size
+gk = sqrt(2*log(k))
+
+sampl = cummax(rnorm(size))
+data4 = cbind(k, gk, 0)
+data4 = rbind(data4, cbind(k, sampl, 1))
+colnames(data4) = c("Argument", "Value", "Type")
+data5 = cbind(k, sampl/gk, 1)
+colnames(data5) = c("Argument", "Value", "Sample")
+
+
+for (i in 2:5)
+{
+    sampl = cummax(rnorm(size))
+    data4 = rbind(data4, cbind(k, sampl, i))
+    data5 = rbind(data5, cbind(k, sampl/gk, i))
+}
+
+data4 = as.data.frame(data4)
+data5 = as.data.frame(data5)
+
+```
+
+```{r 3firstPlot}
+
+ggplot(data4, aes(x=Argument, y=Value, group=as.factor(Type), colour=as.factor(Type))) +
+    geom_line(size=1.2, alpha=.8) +
+    scale_x_log10() +
+    guides(y="legend") +
+    labs(title="Symulacje funkcji aproksymuj¹cych", y=TeX('$M_k$'), x="k") +
+    scale_color_discrete(name="Funkcja",
+                        labels=lapply(c('$g_k=\\sqrt{2\\log k}$' , '$M_{k,1}$',
+                                        '$M_{k,2}$', '$M_{k,3}$',
+                                        '$M_{k,4}$', '$M_{k,5}$'), TeX)) +
+    theme_minimal()
+
+```
+
+Ka¿da krzywa przedstawia aproksymacje pochodz¹c¹ z innej symulacji.
+
+Na powy¿szym wykresie widaæ, ¿e istnieje pewna zbie¿noœæ i faktycznie maksimum z obserwacji oscyluje wokó³ funkcji $g_k$, 
+lecz nie jest widoczna ¿adna znacz¹ca zbie¿noœæ. Byæ mo¿e dysponujemy zbyt ma³¹ liczb¹ obserwacji, jednak¿e ograniczaj¹ nas zasoby komputera.
+Co istotne, w wiêkszoœci przypadków (tak¿e tych, które nie zosta³y tutaj zobrazowane), funkcja $g_k$ jest górnym ograniczeniem na $M_k$
+
+\newpage
+
+Przyjrzyjmy siê stosunkowi $M_k$ do $g_k$:
+
+```{r 3secondPlot}
+
+ggplot(data5, aes(x=Argument, y=Value, group=as.factor(Sample), colour=as.factor(Sample))) +
+    geom_line(size=1.2, alpha=.8) +
+    scale_x_log10() +
+    guides(y="legend") +
+    labs(title="Symulacje funkcji aproksymuj¹cych", y=TeX('$M_k/g_k$'), x="k") +
+    scale_color_discrete(name="Funkcja",
+                        labels=lapply(c('$M_{k,1}/g_k$',
+                                        '$M_{k,2}/g_k$', '$M_{k,3}/g_k$',
+                                        '$M_{k,4}/g_k$', '$M_{k,5}/g_k$'), TeX)) +
+    theme_minimal()
+
+```
+
+Dane pochodz¹ z tych samych symulacji, co w poprzednim wylkresie tak¿e mo¿na dopatrzeæ siê zale¿noœci pomiêdzy nimi.
+Zgodnie z oczekiwaniami, widoczna jest pewna stabilizacja ilorazu wokó³ jednoœci, lecz jest to dalekie od jakiejkolwiek zbie¿noœci.
+Podobnie jak w poprzednim przypadku problemem mo¿e byæ niewystarczaj¹ca licznoœæ próby.
+
+
+\newpage
+
+# Zadanie IV
+
+Ostatnim zadaniem by³o porównanie testów Bonferonniego oraz Fishera.
+Ka¿dy z nich charakteryzuje siê inna charaktyrystyk¹ i wra¿liwoœci¹ na odchylenia w próbie.
+
+Z racji uzywania miniumum podczas konstrukcji obszaru krytycznego test z poprawk¹ Bonferonniego jest wra¿liwy na pojedyñcze grupy, 
+które istotnie nie spe³niaj¹ hipotezy zerowej. Z kolei jest on niepodatny na wiele ma³ych odchyleñ od hipotezy zerowej. 
+Tak¹ sytuacjê zasymulujemy w przypadku *A*.
+
+Test Fishera dzia³a zupe³nie na odwrót, jest on niepodatny na pojedyñcz¹, siln¹ przes³ankê do odrzucenia hipotezy zerowej, 
+ale za to doskonale siê nadaje do testowanie sytuacji, gdy mamy wiele grup, które niewiele odstaj¹ od hipotezy zerowej. 
+Tak¹ sytuacjê symulujemy w przypadku *B*.
+
+Symulowane przypadki:
+
+A. $\mu_1=1.2\sqrt{2\log{p}}, \mu_2=...=\mu_{5000}=0$  
+B. $\mu_1=...=\mu_1000=0.15\sqrt{2\log{p}}, \mu_{1001}=...=\mu_{5000}=0$
+    
+Hipotez¹ zerow¹ w ka¿dym z przypadków jest zerowanie œrednich.
+
+Zgodnie z wprowadzeniem test Bonferroniego powienien mieæ wysok¹ moc dla przypadku *A* i nisk¹ dla *B*, 
+a test Fishera powienien zachowywaæ siê dok³adnie odwrotnie.
+
+Sprawdzmy co wynika z symulacji:
+
+
+```{r 4intro, include=FALSE}
+
+p=5000
+n=5000
+k=1000
+alpha=0.05
+mi_1=1.2*sqrt(2*log(p))
+mi_2=0.15*sqrt(2*log(p))
+
+pval = function(x){
+  return (2*pnorm(-abs(x)))
+}
+
+bonftest = function(x){
+  return (min(x) <= alpha/p)
+}
+
+fishtest = function(x){
+  return (-2*sum(log(x)) > qchisq(1-alpha,2*p))
+}
+
+Xa = matrix(rnorm(p*n), p, n)
+Xa[1,] = Xa[1, ] + mi_1
+Xa = pval(Xa)
+
+bonfpowa = mean(apply(Xa, 2, bonftest))
+fishpowa = mean(apply(Xa, 2, fishtest))
+
+Xb = matrix(rnorm(p*n), p, n)
+Xb[1:k,] = Xb[1:k,] + mi_2
+Xb = pval(Xb)
+
+bonfpowb = mean(apply(Xb, 2, bonftest))
+fishpowb = mean(apply(Xb, 2, fishtest))
+
+result = rbind(c(bonfpowa, fishpowa), c(bonfpowb, fishpowb))
+colnames(result) = c("Bonferonni", "Fisher")
+rownames(result) = c("a", "b")
+
+```
+
+```{r 4results, results='asis', fig.width=8}
+
+knitr::kable(result, caption="Moce testów dla ka¿dego z przypadków")
+
+```

@@ -1,0 +1,329 @@
+---
+title: "Teoria analizy du¿ych zbiorów - Lista VI"
+author: "Makowski Micha³"
+date: "14 czerwiec 2017"
+output:
+  pdf_document:
+    fig_caption: yes
+    highlight: tango
+    keep_tex: yes
+    number_sections: yes
+    toc: yes
+header-includes:
+- \usepackage{booktabs}
+- \usepackage{subfig}
+- \usepackage{graphicx}
+- \usepackage{amsmath}
+- \DeclareMathOperator*{\argmax}{arg\,max}
+lang: pl-PL
+geometry: margin=1cm
+subtitle: Ryzyko estymacyjne 
+fontsize: 10pt
+---
+
+```{r knitrOptions, include=FALSE}
+
+inline_hook=function(x) { if (is.numeric(x)) { format(x, digits=5) } else x}
+
+knitr::knit_hooks$set(inline=inline_hook)
+knitr::opts_chunk$set(comment="", message = FALSE, echo = FALSE, warning = FALSE, error = FALSE,
+                      tidy.opts = list(keep.blank.line = TRUE, width.cutoff = 120),
+                      options(width = 100), fig.align = 'center', fig.height = 6, 
+                      # cache = TRUE,
+                      fig.width = 10, fig.path = 'figure/plot-', fig.show = 'hold', size = 'footnotesize')
+
+```
+
+```{r libraries, include=FALSE}
+
+rm(list=ls())
+
+library(MASS, quietly=TRUE)
+library(matrixcalc, quietly=TRUE)
+library(xtable, quietly=TRUE)
+
+
+options(width=100)
+
+```
+
+\newpage 
+
+# Wstêp
+
+W nimniejszym raporcie umieszczone zosta³y rozwi¹zania szstej listy zadañ z przedmiotu 
+__Teoria analizy du¿ych zbiorów__ prowadzonego przez Pani¹ Profesor Ma³gorzatê Bogdan we 
+wspó³pracy z Panem Micha³em Kosem. Na tej¿e liœcie poruszony zosta³ problem estymacji œredniej w przypadku 
+wielowymiarowego rozk³adu normalnego. Poni¿ej przedstawimy cztery estymatory u¿ywane w kolejnych æwiczeniach.
+
+## Za³o¿enia i definicje
+
+Wiêkszoœc poni¿szych definicji zosta³o wprowadzonych w raposrcie dot. listy pi¹tej, jednak¿e przypomnimy je tutaj dla porz¹dku. 
+
+Zak³adamy, ¿e dysponujemy pojedyncz¹ obserwacj¹ $X$ z $p$-wymiarowego rozk³adu normalnego $N(\mu,I)$,
+gdzie $\mu$ to wektor œrednich, a $\Sigma$ to macierz kowariancji. 
+
+Do oceny estymatorów u¿yjemy estymatora b³êdu œredniokwadratowego [MSE] zdefinowanego nastêpuj¹co
+$$\operatorname{MSE}=\frac{1}{p}\sum_{i=1}^p(X_i - \hat{X_i})^2$$
+gdzie $X_i$ oraz $\hat{X}_i$ to odpowiednio $i$-ta wspó³rzêdna i estymator jej œredniej.
+
+## Estymatory
+
+### Estymator najwiêkszej wiarygodnoœci [MLE]
+
+Najprostszy estymator, to estmator najwiêkszej wiarygodnoœci, który w przypadku wielowymiarowego rozk³adu
+normalnego jest œredni¹ obserwacji $X$. Mamy wiêc 
+$$\hat{\mu}_{MLE} = X \qquad \text{[œrednia]}.$$
+
+### Estymator Jamesa-Steina [JS]
+
+Estymator Jamesa-Steina, to estmator który, zgodnie z teori¹, powinien wykazywaæ mniejszy b³¹d 
+œredniokwadratowy ni¿ estymator najwiêkszej wiarygodnoœci. Zadany jest on wzorem
+$$\hat{\mu}_{JS} = \left( 1-\frac{p-2}{\|X\|^2}\right)X.$$
+
+### Estymator Jamesa-Steina z modyfikacja Mary Ellen Bock (1975) [MEB]
+
+Jest to modyfikacja estymatora JS, która pozwala na estymacjê, gdy zmienne s¹ od siebie zale¿ne.
+Zadany jest on poprzez
+$$\hat{\mu}_{MEB} = \left( 1-\frac{\hat{p}-2}{X^T\Sigma^{-1}X}\right)X,$$
+gdzie $\hat{p}=\frac{Tr(\Sigma)}{\lambda_{max}(\Sigma)}$, a $Tr(\Sigma)$ i $\lambda_{max}(\Sigma)$ 
+to odpowiednio œlad i najwiêksza wartoœæ w³asna macierzy $\Sigma$.
+
+### Estymator odciêciowy [HT]
+
+Jest to nietypowy estymator, u¿ywany w g³ównie w mieszaninach rzadkich. Opera siê on na zasadzie odciêcia:
+
+$$
+\hat{\mu}_H(x_i) = x_1\mathbb{1}_{\{|x_i|>\lambda\}},
+$$
+gdzie $\lambda$ jest dobierana tak, aby zapewniaæ kontrolê odpowiednich blêdów przy za³o¿eniu, 
+¿e dla zdecydowanej wiêkszoœci zmiennych $\mu=0$. Widaæ, ¿e estymator ten nadaje siê do mieszanin rzadkich, 
+do testowania problemów w takich mieszaninach. Poziom $\lambda$ dobierany jest w zale¿noœci o postawionego celu, mo¿e byæ oparty 
+np. o korekte Bonferroniego czy procedurê Benaminiego-Hochberga. Poni¿ej przedstawimy postaæ tych odcieæ dla testowania hipotez,
+$p_i$ to p-wartoœæ na i-tej wspó³rzêdnej, $p_{(i)}$ to oczywiœcie i-ta uporz¹dkowana p-wartoœæ:
+
+* Dla kontrolowania FWER u¿ywa siê korekty Bonferroniego, udowodnione zosta³o, ¿e dla korekty postaci $\lambda=q/n$ kontrola FWER wynosi $q$,
+* Dla kontrolowania FDR stosuje siê procedurê BH(q), czyli $\lambda=p(i_0)$, gdzie $i_0=\argmax_i (p(i)\le\frac{i}{n}q$.
+
+\newpage
+
+```{r functions}
+
+MatrixNorm = function(matrix)
+{
+    apply(matrix, 2, function(x) sum(x^2))
+}
+
+SquareErrorSum = function(matrix)
+{
+    apply(matrix, 2, function(x) sum((x - mean(x))^2))
+}
+
+QuadraticLoss = function(matrix, meanVector)
+{
+    apply(matrix, 2, function(x) sum((x - meanVector)^2))/nrow(matrix)
+}
+
+MLEmse <- function(matrix, meanVector)
+{
+    MLEestimator <- matrix
+    mean(QuadraticLoss(MLEestimator, meanVector))
+}
+
+JSmse <- function(matrix, meanVector)
+{
+    JSestimator <- t((1-(nrow(matrix)-2)/MatrixNorm(matrix))*t(matrix))
+    mean(QuadraticLoss(JSestimator, meanVector))
+}
+
+
+JSMEBmse <- function(matrix, meanVector, covarianceMatrix)
+{
+    eigenValues <- eigen(covarianceMatrix)$values
+    pHat <- sum(diag(covarianceMatrix))/max(eigenValues)
+    denominator <- apply(matrix, 2, function(x)  as.numeric(x %*% matrix.inverse(covarianceMatrix) %*% x))
+
+    JSMEBestimator <- (1-(pHat-2)/denominator)*matrix
+    mean(QuadraticLoss(JSMEBestimator, meanVector))
+}
+
+FDRthreshold <- function(vector, q)
+{
+    n <- length(vector)
+    vector <- sort(abs(vector), decreasing = T)
+    
+    # i <- 1
+    # while(vector[i]>=qnorm(i*q/(2*n), lower.tail = F)  && i<n)
+    #     i <- i+1
+    
+    i <- n
+    while(vector[i]<qnorm(i*q/(2*n), lower.tail = F)  && i>1)
+        i <- i-1
+
+    vector[i]
+}
+
+HTmse <- function(matrix, meanVector, q, FDR = F)
+{
+    HTestimator <- matrix(0, ncol = ncol(matrix), nrow = nrow(matrix))
+    
+    if(FDR)
+    {
+        FDRthreshold <- apply(matrix, 2, function(x)  FDRthreshold(x, q))
+        
+        for(i in 1:ncol(matrix))
+        {
+            HTestimator[,i] <- matrix[,i]*(matrix[,i]>=FDRthreshold[i])
+            
+        }
+    }
+    else
+    {
+        HTestimator <- apply(matrix, 1:2, function(x)  x*(x>=qnorm(q/nrow(matrix), lower.tail = F)))
+    }
+
+    mean(QuadraticLoss(HTestimator, meanVector))
+}
+
+```
+
+# Zadanie 1
+
+Zadanie pierwsze to zmodyfikowane zadanie drugie z listy pi¹tej.
+Porównamy estymatory *MLE*, *MEB* w trzech róznych przypadkach:
+
+* A. $\mu=0$,
+* B. $\mu$ pochodzi z rozk³adu $N(0,5I)$,
+* C. $\mu_i \sim N(20,5)$.
+
+Zak³adamy, ¿e macierz kowariancji nie jest macierz¹ diagonaln¹. 
+Wtedy nad estymatorer *MLE* powinien przewa¿aæ (w sensie b³êdu œredniokwadratowego) estymator *MEB*.
+G³ównym problemem przy jego stosowaniu jest wymagana znajomoœci macierzy kowariancji
+
+Zak³adamy, ¿e $X=(X_1,X_2,...,X_p)\sim N(\mu,\Sigma)$, gdzie $\Sigma_{i,i}=1$, a $\Sigma_{i,j}=0.4$ dla 
+$i\ne j$. 
+
+Wyniki:
+
+```{r exercise1}
+
+repetitions = 500
+dimSize = 500 
+
+set.seed(20)
+
+meanDistributionParameters <- list(c(0,0), c(0, sqrt(5)), c(20, sqrt(5))) 
+covarianceMatrix <- matrix(0.4, ncol = dimSize, nrow = dimSize) + diag(0.6, ncol = dimSize, nrow = dimSize)
+
+eigenValues <- eigen(covarianceMatrix)$values
+pHat <- sum(diag(covarianceMatrix))/max(eigenValues)
+
+results <- matrix(0, nrow = length(meanDistributionParameters), ncol = 2)
+j <- 1
+
+for(parameters in meanDistributionParameters)
+{
+    meanVector <- rnorm(dimSize, mean = parameters[1], sd = parameters[2])
+    
+    normalMatrix <- t(mvrnorm(n = repetitions, mu = meanVector, Sigma = covarianceMatrix))
+
+    results[j,1] <- MLEmse(normalMatrix, meanVector)
+    results[j,2] <- JSMEBmse(normalMatrix, meanVector, covarianceMatrix)
+    
+    j = j + 1
+}
+
+results = data.frame(results, row.names = c("A", "B", "C"))
+colnames(results) <- c('MLE','MEB')
+
+```
+
+```{r results1, results = 'asis'}
+
+options(xtable.comment = FALSE)
+print(xtable(results, caption = "Estymowane b³êdy œredniokwadratowe, niezerowa korelacja", digits =5),
+      sanitize.text.function=function(x){x})
+
+```
+
+Zaobserwowana ró¿nica pomiêdzy estymatorem MLE, a MEB jest niewielka, ale pokazuje, ¿e estymator MEB spisuje siê lepiej w powy¿szym 
+problemie. tak ma³a ró¿nica mo¿e wynikaæ z niskiej wartoœci $\hat{p}$, równej `r pHat`. 
+Po raz kolejny, przytaczaj¹c teoriê podan¹ na wyk³adzie, dopiero je¿eli $\hat{p}\ge2$ to estymator
+MEB ma mniejszy $\operatorname{MSE}$ ni¿ MLE.
+
+\newpage
+# Zadanie 2 
+
+W zadaniu porównamy estymatory *MLE* i *MEB*, oraz dwie postaci regu³y odciêcia w nastêpuj¹cych przypadkach:
+
+* A. $\mu_1=...=\mu_5=3.5, \mu_6=...=\mu_{500}=0$,
+* B. $\mu_1=...=\mu_{30}=2.5, \mu_31=...=\mu_{500}=0$,
+* C. $\mu_1=...=\mu_{100}=1.8, \mu_31=...=\mu_{500}=0$,
+* D. $\mu_1=...=\mu_{500}=0.4$,
+* E. $\mu_i=3.5*i^{-1/2}$,
+* F. $\mu_i=3.5*i^{-1}$.
+
+Pierwsza dwa estymatory zosta³y wczesniej opisane, regu³a odciecia natomiast bêdzie u¿yta dwukrotnie:
+
+* $\lambda=\lambda_{Bonf}$, przy czym próg jest ustalony tak, aby kontrolowaæ FWER na poziomie 0.1,
+* $\lambda=\lambda_{BH}$, przy czym próg jest ustalony tak, aby kontrolowaæ FDR na poziomie 0.1
+
+Regu³a odciêcia opera siê na zasadzie "keep signal, kill noise".
+
+Otrzymane wyniki:
+
+```{r exercise2}
+
+repetitions = 500
+dimSize = 500
+
+set.seed(20)
+
+mi_1=3.5
+mi_2=2.5
+mi_3=1.8
+mi_4=0.4
+mi_5=3.5*(1:dimSize)^(-1/2)
+mi_6=3.5*(1:dimSize)^(-1)
+
+
+u = matrix(nrow = 6, ncol = dimSize)
+u[1,] = c(rep(mi_1, length.out = 5), rep(0, length.out = dimSize-5))
+u[2,] = c(rep(mi_2, length.out = 30), rep(0, length.out = dimSize-30))
+u[3,] = c(rep(mi_3, length.out = 100), rep(0, length.out = dimSize-100))
+u[4,] = rep(mi_4, length.out = dimSize)
+u[5,] = mi_5
+u[6,] = mi_6
+
+results <- matrix(0, nrow = nrow(u), ncol = 4)
+
+for(i in 1:nrow(u))
+{
+    meanVector <- u[i,]
+    normalMatrix <- matrix(rnorm(dimSize*repetitions, mean = meanVector),
+                           ncol = repetitions,
+                           nrow = dimSize)
+    
+    results[i,1] <- MLEmse(normalMatrix, meanVector)
+    results[i,2] <- JSmse(normalMatrix, meanVector)
+    results[i,3] <- HTmse(normalMatrix, meanVector, q = 0.1, FDR = F)
+    results[i,4] <- HTmse(normalMatrix, meanVector, q = 0.1, FDR = T)
+}
+
+results = data.frame(results, row.names = c("A", "B", "C", "D", "E", "F"))
+colnames(results) <- c('MLE','JS', 'HTbonf', 'HTbh')
+
+```
+
+```{r results2, results = 'asis'}
+
+options(xtable.comment = FALSE)
+print(xtable(results, caption = "B³êdy œredniokwadratowe, porównanie estymatorów", digits =5),
+      sanitize.text.function=function(x){x})
+
+```
+
+Widzimy, ¿e dla ka¿dego z zagadnieñ b³¹d œredniokwadratowy estymatora najwiêkszej wiarygodnoœæ oscyluje w okolicach wariancji, 
+co jest jasne. Estymator JS zdecydowanie zmniejsza œredni b³ad kwadratowy, dla ka¿dego z przypadków. 
+Estymatory hard-threshold w problemie A zachowuj¹ siê lepiej ni¿ dwa pozosta³e. Najbardziej uniwersalny wydaje sie estymator [JS],
+gdzy jest zdecydowanie lepszy ni¿ [MLE], a w najgorszych wypadkach jest niewiele gorszy nic estymatory odcinaj¹ce.
