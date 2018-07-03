@@ -1,6 +1,6 @@
 ---
 title: "Teoria analizy du¿ych zbiorów - Lista IV"
-author: "Makowski Micha³"
+author: "MM"
 date: "14 czerwiec 2017"
 output:
   pdf_document:

@@ -1,6 +1,6 @@
 ---
 title: "Teoria analizy du¿ych zbiorów - Lista III"
-author: "Makowski Micha³"
+author: "MM"
 date: "11 maja 2017"
 output:
   pdf_document:
@@ -43,13 +43,13 @@ library(latex2exp, quietly=TRUE)
 library(knitr, quietly=TRUE)
 library(xtable, quietly=TRUE)
 library(stats, quietly=TRUE)
-# install.packages("goftest")
+# install.packages("e1071")
 library(goftest, quietly=TRUE)
 library(e1071, quietly=TRUE)
 
 
 
-repNum1 = 100000
+repNum1 = 10000
 repNum2 = repNum3 = 500
 
 ```

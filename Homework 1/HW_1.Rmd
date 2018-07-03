@@ -1,12 +1,13 @@
 ---
 title: "Lista I"
-author: "Makowski Micha³"
+author: "MM"
 date: "9 marca 2017"
 output: 
   pdf_document: 
-    fig_caption: true
+    fig_caption: yes
     highlight: tango
-    toc: true
+    keep_tex: yes
+    toc: yes
 fontsize: 10pt
 geometry: margin=1.5cm
 subtitle: 'Korekta Bonferonniego' 
@@ -112,7 +113,7 @@ co pokazuje, ¿e aproksymacja ogonów rozk³adu normalnego przy pomocy funkcji $g_2
 Zdefiniujmy trzy funkcje:
 
 $$g_1(\alpha, p)=\Phi^{-1}\left(1-\frac{\alpha}{2p}\right)$$
-$$g_2(\alpha, p)=\sqrt{B-\log B}\TeXtrm{, gdzie }B=2\log\left(\frac{2p}{\alpha}\right)-\log(2\pi)$$
+$$g_2(\alpha, p)=\sqrt{B-\log B}\text{, gdzie }B=2\log\left(\frac{2p}{\alpha}\right)-\log(2\pi)$$
 $$c(p)=\sqrt{2\log(p)}$$
 
 przy czym pozosta³e oznaczenia s¹ jak w poprzednim zadaniu. 

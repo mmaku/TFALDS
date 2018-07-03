@@ -1,6 +1,6 @@
 ---
 title: "Teoria analizy du¿ych zbiorów - Lista II"
-author: "Makowski Micha³"
+author: "MM"
 date: "9 marca 2017"
 output:
   pdf_document:
@@ -37,7 +37,7 @@ options(width=100)
 
 # install.packages("ggplot2")r
 library(ggplot2, quietly=TRUE) 
-# install.packages("latex2exp")
+# install.packages("xtable")
 library(latex2exp, quietly=TRUE) 
 library(knitr, quietly=TRUE)
 library(xtable, quietly=TRUE)

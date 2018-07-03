@@ -1,6 +1,6 @@
 ---
 title: "Teoria analizy du¿ych zbiorów - Lista V"
-author: "Makowski Micha³"
+author: "MM"
 date: "31 maja 2017"
 output:
   pdf_document:
@@ -38,7 +38,6 @@ rm(list=ls())
 library(MASS, quietly=TRUE)
 library(matrixcalc, quietly=TRUE)
 library(xtable, quietly=TRUE)
-
 
 options(width=100)
 
